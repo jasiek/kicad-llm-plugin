@@ -23,14 +23,15 @@ This project appears to be in initial setup phase. Standard Python development c
 ## KiCad Plugin Context
 
 This plugin is designed to work within the KiCad ecosystem. Key considerations:
-- KiCad plugins typically use the `pcbnew` or `eeschema` Python APIs
+- We're using KiCad 9.0
+- This plugin will use the eeschema python API.
 - Plugin registration and initialization will likely be handled in the main `__init__.py`
-- Schematic analysis will require KiCad's schematic object model understanding
+- Schematic analysis will require KiCad's schematic object model
+- Use this interpreter for testing the plugin: /Applications/KiCad/KiCad.app/Contents/Frameworks/Python.framework/Versions/Current/bin/python3
+- Examples of working plugins:
+  - https://github.com/Steffen-W/Import-LIB-KiCad-Plugin
 
 ## Current State
 
 The repository is in initial development with minimal code structure established. The project will likely need:
 - Implementation of the `SchematicLLMChecker` module
-- KiCad API integration
-- LLM integration (likely via API calls)
-- Plugin registration and configuration
