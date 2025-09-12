@@ -1,0 +1,42 @@
+{
+    "name": "Schematic LLM Checker",
+    "description": "AI-powered schematic analysis and verification using Large Language Models",
+    "description_full": "This plugin provides comprehensive schematic analysis capabilities powered by Large Language Models. It can identify potential design issues, verify component connections, suggest improvements, and provide detailed feedback on schematic quality and best practices.",
+    "identifier": "com.kicad.schematic-llm-checker",
+    "type": "plugin",
+    "author": {
+        "name": "KiCad LLM Plugin Team",
+        "contact": {
+            "email": "",
+            "web": ""
+        }
+    },
+    "maintainer": {
+        "name": "KiCad LLM Plugin Team",
+        "contact": {
+            "email": "",
+            "web": ""
+        }
+    },
+    "license": "MIT",
+    "resources": {
+        "homepage": "",
+        "repository": "",
+        "bugtracker": ""
+    },
+    "version": "0.1.0",
+    "status": "development",
+    "kicad_version": "6.0",
+    "kicad_version_max": "8.99",
+    "tags": [
+        "analysis",
+        "verification",
+        "ai",
+        "llm",
+        "schematic",
+        "design-rule-check"
+    ],
+    "keep_on_update": [
+        "config.json"
+    ]
+}
