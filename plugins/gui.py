@@ -9,7 +9,7 @@ SETTINGS = {
     'api_key': ''
 }
 
-class ViolationLevel:
+class FindingLevel:
     FATAL = "Fatal"
     MAJOR = "Major"
     MINOR = "Minor"
@@ -18,7 +18,7 @@ class ViolationLevel:
 
     ALL_LEVELS = [FATAL, MAJOR, MINOR, BEST_PRACTICE, NICE_TO_HAVE]
 
-class ViolationItem:
+class FindingItem:
     def __init__(self, level, description, location=""):
         self.level = level
         self.description = description
@@ -88,18 +88,18 @@ class SchematicLLMCheckerDialog(wx.Dialog):
     def __init__(self, parent=None):
         super().__init__(parent, title="Schematic LLM Checker", size=(800, 600))
 
-        # Sample violations for demonstration
-        self.violations = [
-            ViolationItem(ViolationLevel.FATAL, "Power supply missing decoupling capacitor", "U1"),
-            ViolationItem(ViolationLevel.MAJOR, "High-speed signal without proper termination", "Net CLK"),
-            ViolationItem(ViolationLevel.MINOR, "Pull-up resistor value not optimal", "R5"),
-            ViolationItem(ViolationLevel.BEST_PRACTICE, "Consider adding test points for debugging", "VCC rail"),
-            ViolationItem(ViolationLevel.NICE_TO_HAVE, "Add component reference designators", "Various components"),
+        # Sample findings for demonstration
+        self.findings = [
+            FindingItem(FindingLevel.FATAL, "Power supply missing decoupling capacitor", "U1"),
+            FindingItem(FindingLevel.MAJOR, "High-speed signal without proper termination", "Net CLK"),
+            FindingItem(FindingLevel.MINOR, "Pull-up resistor value not optimal", "R5"),
+            FindingItem(FindingLevel.BEST_PRACTICE, "Consider adding test points for debugging", "VCC rail"),
+            FindingItem(FindingLevel.NICE_TO_HAVE, "Add component reference designators", "Various components"),
         ]
 
-        self.filtered_violations = self.violations.copy()
+        self.filtered_findings = self.findings.copy()
         self.setup_ui()
-        self.update_violations_display()
+        self.update_findings_display()
 
     def setup_ui(self):
         # Main sizer
@@ -113,16 +113,16 @@ class SchematicLLMCheckerDialog(wx.Dialog):
         title.SetFont(title_font)
         main_sizer.Add(title, 0, wx.ALL | wx.CENTER, 10)
 
-        # Violations list
-        violations_label = wx.StaticText(self, label="Violations:")
-        main_sizer.Add(violations_label, 0, wx.ALL, 5)
+        # Findings list
+        findings_label = wx.StaticText(self, label="Findings:")
+        main_sizer.Add(findings_label, 0, wx.ALL, 5)
 
-        self.violations_list = wx.ListCtrl(self, style=wx.LC_REPORT | wx.LC_SINGLE_SEL)
-        self.violations_list.AppendColumn("Level", width=120)
-        self.violations_list.AppendColumn("Description", width=400)
-        self.violations_list.AppendColumn("Location", width=150)
+        self.findings_list = wx.ListCtrl(self, style=wx.LC_REPORT | wx.LC_SINGLE_SEL)
+        self.findings_list.AppendColumn("Level", width=120)
+        self.findings_list.AppendColumn("Description", width=400)
+        self.findings_list.AppendColumn("Location", width=150)
 
-        main_sizer.Add(self.violations_list, 1, wx.ALL | wx.EXPAND, 5)
+        main_sizer.Add(self.findings_list, 1, wx.ALL | wx.EXPAND, 5)
 
         # Filter checkboxes
         filter_box = wx.StaticBoxSizer(wx.StaticBox(self, label="Filter by Level"), wx.HORIZONTAL)
@@ -138,7 +138,7 @@ class SchematicLLMCheckerDialog(wx.Dialog):
         filter_box.Add(wx.StaticLine(self, style=wx.LI_VERTICAL), 0, wx.ALL | wx.EXPAND, 5)
 
         # Individual level checkboxes
-        for level in ViolationLevel.ALL_LEVELS:
+        for level in FindingLevel.ALL_LEVELS:
             checkbox = wx.CheckBox(self, label=level)
             checkbox.SetValue(True)
             checkbox.Bind(wx.EVT_CHECKBOX, self.on_level_checkbox)
@@ -160,6 +160,10 @@ class SchematicLLMCheckerDialog(wx.Dialog):
         close_button.Bind(wx.EVT_BUTTON, self.on_close)
         button_sizer.Add(close_button, 0, wx.ALL, 5)
 
+        run_button = wx.Button(self, label="Run")
+        run_button.Bind(wx.EVT_BUTTON, self.on_run)
+        button_sizer.Add(run_button, 0, wx.ALL, 5)
+
         main_sizer.Add(button_sizer, 0, wx.ALL | wx.EXPAND, 10)
 
         self.SetSizer(main_sizer)
@@ -169,49 +173,53 @@ class SchematicLLMCheckerDialog(wx.Dialog):
             # Deselect all individual checkboxes
             for checkbox in self.checkboxes.values():
                 checkbox.SetValue(False)
-            # Show all violations
-            self.filtered_violations = self.violations.copy()
+            # Show all findings
+            self.filtered_findings = self.findings.copy()
         else:
-            # If "All" is unchecked, show no violations
-            self.filtered_violations = []
+            # If "All" is unchecked, show no findings
+            self.filtered_findings = []
 
-        self.update_violations_display()
+        self.update_findings_display()
 
     def on_level_checkbox(self, event):
         # If any individual checkbox is selected, deselect "All"
         if any(checkbox.GetValue() for checkbox in self.checkboxes.values()):
             self.all_checkbox.SetValue(False)
 
-        # Filter violations based on selected levels
+        # Filter findings based on selected levels
         selected_levels = [level for level, checkbox in self.checkboxes.items() if checkbox.GetValue()]
 
         if selected_levels:
-            self.filtered_violations = [v for v in self.violations if v.level in selected_levels]
+            self.filtered_findings = [f for f in self.findings if f.level in selected_levels]
         else:
             # If no individual levels are selected, show nothing
-            self.filtered_violations = []
+            self.filtered_findings = []
 
-        self.update_violations_display()
+        self.update_findings_display()
 
-    def update_violations_display(self):
-        self.violations_list.DeleteAllItems()
+    def update_findings_display(self):
+        self.findings_list.DeleteAllItems()
 
-        for i, violation in enumerate(self.filtered_violations):
-            index = self.violations_list.InsertItem(i, violation.level)
-            self.violations_list.SetItem(index, 1, violation.description)
-            self.violations_list.SetItem(index, 2, violation.location)
+        for i, finding in enumerate(self.filtered_findings):
+            index = self.findings_list.InsertItem(i, finding.level)
+            self.findings_list.SetItem(index, 1, finding.description)
+            self.findings_list.SetItem(index, 2, finding.location)
 
             # Set color based on level
-            if violation.level == ViolationLevel.FATAL:
-                self.violations_list.SetItemTextColour(index, wx.Colour(139, 0, 0))  # Dark red
-            elif violation.level == ViolationLevel.MAJOR:
-                self.violations_list.SetItemTextColour(index, wx.Colour(255, 0, 0))  # Red
-            elif violation.level == ViolationLevel.MINOR:
-                self.violations_list.SetItemTextColour(index, wx.Colour(255, 165, 0))  # Orange
-            elif violation.level == ViolationLevel.BEST_PRACTICE:
-                self.violations_list.SetItemTextColour(index, wx.Colour(0, 0, 255))  # Blue
-            elif violation.level == ViolationLevel.NICE_TO_HAVE:
-                self.violations_list.SetItemTextColour(index, wx.Colour(128, 128, 128))  # Gray
+            if finding.level == FindingLevel.FATAL:
+                self.findings_list.SetItemTextColour(index, wx.Colour(139, 0, 0))  # Dark red
+            elif finding.level == FindingLevel.MAJOR:
+                self.findings_list.SetItemTextColour(index, wx.Colour(255, 0, 0))  # Red
+            elif finding.level == FindingLevel.MINOR:
+                self.findings_list.SetItemTextColour(index, wx.Colour(255, 165, 0))  # Orange
+            elif finding.level == FindingLevel.BEST_PRACTICE:
+                self.findings_list.SetItemTextColour(index, wx.Colour(0, 0, 255))  # Blue
+            elif finding.level == FindingLevel.NICE_TO_HAVE:
+                self.findings_list.SetItemTextColour(index, wx.Colour(128, 128, 128))  # Gray
+
+    def on_run(self, event):
+        # Placeholder for future LLM analysis functionality
+        pass
 
     def on_configuration(self, event):
         config_dialog = ConfigurationDialog(self)
