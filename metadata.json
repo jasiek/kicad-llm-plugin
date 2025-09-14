@@ -1,0 +1,27 @@
+{
+    "$schema": "https://go.kicad.org/pcm/schemas/v1",
+    "name": "kicad-llm-plugin",
+    "description": "A plugin for KiCad that integrates large language model (LLM) capabilities to assist with PCB design tasks.",
+    "identifier": "com.github.jasiek.kicad-llm-plugin",
+    "type": "plugin",
+    "version": "1.0.0",
+    "author": {
+        "name": "Your Name",
+        "contact": {
+            "email": "your.email@example.com"
+        }
+    },
+    "license": "MIT",
+    "resources": {
+        "homepage": "https://github.com/jasiek/kicad-llm-plugin",
+        "repository": "https://github.com/jasiek/kicad-llm-plugin"
+    },
+    "description_full": "This plugin leverages large language models to provide intelligent assistance within KiCad, such as generating footprints, symbols, or automating design tasks.",
+    "versions": [
+        {
+            "version": "0.0.1",
+            "status": "development",
+            "kicad_version": "9.0.0"
+        }
+    ]
+}
