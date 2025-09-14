@@ -1,0 +1,24 @@
+{
+  "$schema": "https://go.kicad.org/api/schemas/v1",
+  "name": "Schematic LLM Checker",
+  "identifier": "com.github.jasiek.kicad-llm-plugin",
+  "description": "AI-powered schematic verification and analysis",
+  "runtime": {
+    "type": "python",
+    "min_version": "3"
+  },
+  "actions": [
+    {
+        "identifier": "check_schematic",
+        "name": "Check Schematic with LLM",
+        "description": "Analyze the current schematic using a large language model to identify potential issues",
+        "show-button": true,
+        "scopes": [
+            "pcb"
+        ],
+        "entrypoint": "gui.py",
+        "icons-light": ["icon.png"],
+        "icons-dark": ["icon.png"]
+    }
+  ]
+}
