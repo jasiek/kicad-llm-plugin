@@ -15,7 +15,6 @@
         "show-button": true,
         "scopes": [
           "pcb",
-          "schematic"
         ],
         "entrypoint": "gui.py",
         "icons-light": ["icon.png"],
