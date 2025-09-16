@@ -1,8 +1,8 @@
-from llm_interface import llm_from_config
-from .models import Findings
-from typing import List
+import os
 
-llm = llm_from_config(provider="openai", model_name="gpt-4o-mini")
+import instructor
+from models import Findings
+
 
 SYSTEM_PROMPT = """
 You are an expert electrical engineer and PCB designer with extensive experience in analyzing KiCad netlists.
@@ -12,24 +12,27 @@ You are meticulous and detail-oriented, ensuring that every aspect of the netlis
 USER_PROMPT_TEMPLATE = """
 Given the following KiCad netlist, identify potential issues and suggest improvements.
 Focus on the schematic only, ignore everything related to PCB layout, including footprint assignments.
-Respond with a list of Findings, where each Finding includes:
-- id: A unique identifier for the finding (integer).
-- level: The severity level of the finding (one of: Fatal, Major, Minor, Best Practice, Nice To Have).
-- description: A brief description of the finding.
-- recommendation: A suggested action to address the finding.
-- reference: reference to a component
 
 <netlist>
 {netlist}
 </netlist>
 """
 
-def analyze_netlist(netlist: str) -> Findings:   
-    response = llm.generate_pydantic(
-        prompt_template=USER_PROMPT_TEMPLATE,
-        output_schema=Findings,
-        system=SYSTEM_PROMPT,
-        netlist=netlist
-    )
-    
-    return response
+class LLMOperations:
+    def __init__(self, model_name="openai/gpt-4o-mini", api_key: str = None):
+        if model_name.startswith("openai/"):
+            if api_key:
+                os.environ["OPENAI_API_KEY"] = api_key
+            self.client = instructor.from_provider(model_name)
+        else:
+            raise ValueError(f"Provider {model_name} not supported with instructor library")
+
+    def analyze_netlist(self, netlist: str) -> Findings:
+        response = self.client.chat.completions.create(
+            response_model=Findings,
+            messages=[
+                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "user", "content": USER_PROMPT_TEMPLATE.format(netlist=netlist)}
+            ]
+        )
+        return response

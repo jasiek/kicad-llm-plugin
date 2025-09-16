@@ -1,28 +1,27 @@
 import wx
-
-with open('/tmp/ran', 'w') as f:
-    f.write('ran')
+from models import FindingLevel, Finding
+from core import run
+from typing import List
 
 # Global settings storage (in-memory for now)
-SETTINGS = {
-    'backend': 'ChatGPT 5',
-    'api_key': ''
-}
-
-class FindingLevel:
-    FATAL = "Fatal"
-    MAJOR = "Major"
-    MINOR = "Minor"
-    BEST_PRACTICE = "Best Practice"
-    NICE_TO_HAVE = "Nice To Have"
-
-    ALL_LEVELS = [FATAL, MAJOR, MINOR, BEST_PRACTICE, NICE_TO_HAVE]
+SETTINGS = {}
 
 class FindingItem:
-    def __init__(self, level, description, location=""):
+    def __init__(self, level, description, location="", recommendation=""):
         self.level = level
         self.description = description
         self.location = location
+        self.recommendation = recommendation
+
+    @classmethod
+    def from_finding(cls, finding: Finding):
+        """Create a FindingItem from a Finding model."""
+        return cls(
+            level=finding.level,
+            description=finding.description,
+            location=finding.reference,
+            recommendation=finding.recommendation
+        )
 
     def __str__(self):
         if self.location:
@@ -88,18 +87,29 @@ class SchematicLLMCheckerDialog(wx.Dialog):
     def __init__(self, parent=None):
         super().__init__(parent, title="Schematic LLM Checker", size=(800, 600))
 
-        # Sample findings for demonstration
-        self.findings = [
-            FindingItem(FindingLevel.FATAL, "Power supply missing decoupling capacitor", "U1"),
-            FindingItem(FindingLevel.MAJOR, "High-speed signal without proper termination", "Net CLK"),
-            FindingItem(FindingLevel.MINOR, "Pull-up resistor value not optimal", "R5"),
-            FindingItem(FindingLevel.BEST_PRACTICE, "Consider adding test points for debugging", "VCC rail"),
-            FindingItem(FindingLevel.NICE_TO_HAVE, "Add component reference designators", "Various components"),
-        ]
-
-        self.filtered_findings = self.findings.copy()
+        self.findings: List[FindingItem] = []
+        self.filtered_findings: List[FindingItem] = []
         self.setup_ui()
         self.update_findings_display()
+
+    def load_findings(self):
+        """Load findings from schematic analysis."""
+        try:
+            real_findings = run()
+            if real_findings:
+                self.findings = [FindingItem.from_finding(f) for f in real_findings]
+                self.filtered_findings = self.findings.copy()
+                return True
+            else:
+                self.findings = []
+                self.filtered_findings = []
+                wx.MessageBox("No findings from analysis. The schematic may have no issues or analysis failed.", "Analysis Complete", wx.OK | wx.ICON_INFORMATION)
+                return True
+        except Exception as e:
+            self.findings = []
+            self.filtered_findings = []
+            wx.MessageBox(f"Error during analysis: {str(e)}", "Analysis Error", wx.OK | wx.ICON_ERROR)
+            return False
 
     def setup_ui(self):
         # Main sizer
@@ -168,6 +178,17 @@ class SchematicLLMCheckerDialog(wx.Dialog):
 
         self.SetSizer(main_sizer)
 
+    def apply_current_filters(self):
+        """Apply the current filter settings to the findings."""
+        if self.all_checkbox.GetValue():
+            self.filtered_findings = self.findings.copy()
+        else:
+            selected_levels = [level for level, checkbox in self.checkboxes.items() if checkbox.GetValue()]
+            if selected_levels:
+                self.filtered_findings = [f for f in self.findings if f.level in selected_levels]
+            else:
+                self.filtered_findings = []
+
     def on_all_checkbox(self, event):
         if self.all_checkbox.GetValue():
             # Deselect all individual checkboxes
@@ -218,8 +239,23 @@ class SchematicLLMCheckerDialog(wx.Dialog):
                 self.findings_list.SetItemTextColour(index, wx.Colour(128, 128, 128))  # Gray
 
     def on_run(self, event):
-        # Placeholder for future LLM analysis functionality
-        pass
+        """Run the schematic analysis and update findings."""
+        # Show progress dialog or disable button during analysis
+        run_button = event.GetEventObject()
+        run_button.Enable(False)
+        run_button.SetLabel("Running...")
+
+        wx.CallAfter(self._run_analysis, run_button)
+
+    def _run_analysis(self, run_button):
+        """Perform the analysis in the background and update UI."""
+        try:
+            if self.load_findings():
+                self.apply_current_filters()
+                self.update_findings_display()
+        finally:
+            run_button.Enable(True)
+            run_button.SetLabel("Run")
 
     def on_configuration(self, event):
         config_dialog = ConfigurationDialog(self)

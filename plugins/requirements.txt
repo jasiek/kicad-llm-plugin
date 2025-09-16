@@ -1,4 +1,4 @@
 kicad-python>=0.1.0
 wxPython~=4.2
-llm-interface>=0.1.0
-pydantic3>=1.0.0
+pydantic==2.11.9
+instructor==1.11.3

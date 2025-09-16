@@ -14,7 +14,7 @@
         "description": "Analyze the current schematic using a large language model to identify potential issues",
         "show-button": true,
         "scopes": [
-          "pcb",
+          "pcb"
         ],
         "entrypoint": "gui.py",
         "icons-light": ["icon.png"],

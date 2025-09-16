@@ -217,4 +217,5 @@ __marimo__/
 .env
 .DS_Store
 \*~
-.\*~
+.*~
+.response_cache
