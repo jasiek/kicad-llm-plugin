@@ -1,4 +1,5 @@
 import wx
+import threading
 from models import FindingLevel, Finding
 from core import run
 from config import config_manager
@@ -134,31 +135,6 @@ class SchematicLLMCheckerDialog(wx.Dialog):
         self.setup_ui()
         self.update_findings_display()
 
-    def load_findings(self):
-        """Load findings from schematic analysis."""
-        try:
-            selected_model = config_manager.get_selected_model()
-            api_key = config_manager.get_api_key(selected_model)
-
-            if not api_key:
-                wx.MessageBox(f"No API key configured for {selected_model}. Please configure it in Settings.", "Configuration Error", wx.OK | wx.ICON_WARNING)
-                return False
-
-            real_findings = run(selected_model, api_key)
-            if real_findings:
-                self.findings = [FindingItem.from_finding(f) for f in real_findings]
-                self.filtered_findings = self.findings.copy()
-                return True
-            else:
-                self.findings = []
-                self.filtered_findings = []
-                wx.MessageBox("No findings from analysis. The schematic may have no issues or analysis failed.", "Analysis Complete", wx.OK | wx.ICON_INFORMATION)
-                return True
-        except Exception as e:
-            self.findings = []
-            self.filtered_findings = []
-            wx.MessageBox(f"Error during analysis: {str(e)}", "Analysis Error", wx.OK | wx.ICON_ERROR)
-            return False
 
     def setup_ui(self):
         # Main sizer
@@ -219,9 +195,9 @@ class SchematicLLMCheckerDialog(wx.Dialog):
         close_button.Bind(wx.EVT_BUTTON, self.on_close)
         button_sizer.Add(close_button, 0, wx.ALL, 5)
 
-        run_button = wx.Button(self, label="Run")
-        run_button.Bind(wx.EVT_BUTTON, self.on_run)
-        button_sizer.Add(run_button, 0, wx.ALL, 5)
+        self.run_button = wx.Button(self, label="Run")
+        self.run_button.Bind(wx.EVT_BUTTON, self.on_run)
+        button_sizer.Add(self.run_button, 0, wx.ALL, 5)
 
         main_sizer.Add(button_sizer, 0, wx.ALL | wx.EXPAND, 10)
 
@@ -289,22 +265,58 @@ class SchematicLLMCheckerDialog(wx.Dialog):
 
     def on_run(self, event):
         """Run the schematic analysis and update findings."""
-        # Show progress dialog or disable button during analysis
-        run_button = event.GetEventObject()
-        run_button.Enable(False)
-        run_button.SetLabel("Running...")
+        # Disable the run button during analysis
+        self.run_button.Enable(False)
+        self.run_button.SetLabel("Running...")
 
-        wx.CallAfter(self._run_analysis, run_button)
+        # Start analysis in background thread
+        analysis_thread = threading.Thread(target=self._run_analysis_thread)
+        analysis_thread.daemon = True
+        analysis_thread.start()
 
-    def _run_analysis(self, run_button):
-        """Perform the analysis in the background and update UI."""
+    def _run_analysis_thread(self):
+        """Perform the analysis in a background thread."""
         try:
-            if self.load_findings():
-                self.apply_current_filters()
-                self.update_findings_display()
+            selected_model = config_manager.get_selected_model()
+            api_key = config_manager.get_api_key(selected_model)
+
+            if not api_key:
+                wx.CallAfter(self._show_error, f"No API key configured for {selected_model}. Please configure it in Settings.", "Configuration Error")
+                return
+
+            # Run the analysis (this is the blocking operation)
+            real_findings = run(selected_model, api_key)
+
+            # Update UI on the main thread
+            wx.CallAfter(self._analysis_complete, real_findings)
+
+        except Exception as e:
+            wx.CallAfter(self._show_error, f"Error during analysis: {str(e)}", "Analysis Error")
         finally:
-            run_button.Enable(True)
-            run_button.SetLabel("Run")
+            # Re-enable the run button on the main thread
+            wx.CallAfter(self._reset_run_button)
+
+    def _analysis_complete(self, real_findings):
+        """Handle analysis completion on the main thread."""
+        if real_findings:
+            self.findings = [FindingItem.from_finding(f) for f in real_findings]
+            self.filtered_findings = self.findings.copy()
+            self.apply_current_filters()
+            self.update_findings_display()
+        else:
+            self.findings = []
+            self.filtered_findings = []
+            wx.MessageBox("No findings from analysis. The schematic may have no issues or analysis failed.", "Analysis Complete", wx.OK | wx.ICON_INFORMATION)
+            self.update_findings_display()
+
+    def _show_error(self, message, title):
+        """Show error message on the main thread."""
+        wx.MessageBox(message, title, wx.OK | wx.ICON_ERROR)
+
+    def _reset_run_button(self):
+        """Reset the run button state on the main thread."""
+        self.run_button.Enable(True)
+        self.run_button.SetLabel("Run")
 
     def on_configuration(self, event):
         config_dialog = ConfigurationDialog(self)
