@@ -20,16 +20,11 @@ Focus on the schematic only, ignore everything related to PCB layout, including 
 
 class LLMOperations:
     def __init__(self, model_name, api_key):
-        if model_name.startswith("openai/"):
-            if api_key:
-                os.environ["OPENAI_API_KEY"] = api_key
-            self.client = instructor.from_provider(model_name)
-        elif model_name.startswith("google/"):
-            if api_key:
-                os.environ["GEMINI_API_KEY"] = api_key
-            self.client = instructor.from_provider(model_name)
-        else:
-            raise ValueError(f"Provider {model_name} not supported with instructor library")
+        self.client = instructor.from_provider(model_name)
+
+        provider = model_name.split('/')[0].upper()
+        # Ugly but that's how it's done for now.
+        os.environ[f"{provider}_API_KEY"] = api_key
 
     def analyze_netlist(self, netlist: str) -> Findings:
         response = self.client.chat.completions.create(
