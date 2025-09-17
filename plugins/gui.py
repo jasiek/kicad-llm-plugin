@@ -1,13 +1,8 @@
 import wx
 from models import FindingLevel, Finding
 from core import run
+from config import config_manager
 from typing import List
-
-# Global settings storage (in-memory for now)
-SETTINGS = {
-    'backend': '"openai/gpt-4o-mini"',
-    'api_key': ''
-}
 
 AVAILABLE_MODELS = [
     "openai/gpt-4o-mini"
@@ -38,9 +33,9 @@ class FindingItem:
 
 class ConfigurationDialog(wx.Dialog):
     def __init__(self, parent=None):
-        super().__init__(parent, title="Configuration", size=(400, 250))
+        super().__init__(parent, title="Configuration", size=(400, 300))
 
-        self.temp_settings = SETTINGS.copy()  # Temporary copy for editing
+        self.selected_model = config_manager.get_selected_model()
         self.setup_ui()
         self.Center()
 
@@ -53,16 +48,25 @@ class ConfigurationDialog(wx.Dialog):
         backend_sizer.Add(backend_label, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
 
         self.backend_choice = wx.Choice(self, choices=AVAILABLE_MODELS)
-        self.backend_choice.SetSelection(0) 
+        # Set selection based on config
+        try:
+            selection_index = AVAILABLE_MODELS.index(self.selected_model)
+            self.backend_choice.SetSelection(selection_index)
+        except ValueError:
+            self.backend_choice.SetSelection(0)
+
+        self.backend_choice.Bind(wx.EVT_CHOICE, self.on_backend_change)
         backend_sizer.Add(self.backend_choice, 1, wx.ALL | wx.EXPAND, 5)
 
         main_sizer.Add(backend_sizer, 0, wx.ALL | wx.EXPAND, 10)
 
         # API Key input
-        api_key_label = wx.StaticText(self, label="API Key:")
+        api_key_label = wx.StaticText(self, label=f"API Key for {self.selected_model}:")
+        self.api_key_label = api_key_label
         main_sizer.Add(api_key_label, 0, wx.ALL, 5)
 
-        self.api_key_text = wx.TextCtrl(self, value=SETTINGS['api_key'], style=wx.TE_PASSWORD)
+        current_api_key = config_manager.get_api_key(self.selected_model) or ""
+        self.api_key_text = wx.TextCtrl(self, value=current_api_key, style=wx.TE_PASSWORD)
         main_sizer.Add(self.api_key_text, 0, wx.ALL | wx.EXPAND, 5)
 
         # Buttons
@@ -81,13 +85,30 @@ class ConfigurationDialog(wx.Dialog):
 
         self.SetSizer(main_sizer)
 
+    def on_backend_change(self, event):
+        """Handle backend model change."""
+        new_model = self.backend_choice.GetStringSelection()
+        if new_model != self.selected_model:
+            self.selected_model = new_model
+            # Update API key field for the new model
+            current_api_key = config_manager.get_api_key(self.selected_model) or ""
+            self.api_key_text.SetValue(current_api_key)
+            # Update label
+            self.api_key_label.SetLabel(f"API Key for {self.selected_model}:")
+            self.Layout()
+
     def on_cancel(self, event):
         self.EndModal(wx.ID_CANCEL)
 
     def on_save(self, event):
-        # Save settings to global SETTINGS
-        SETTINGS['backend'] = self.backend_choice.GetStringSelection()
-        SETTINGS['api_key'] = self.api_key_text.GetValue()
+        # Save settings to configuration manager
+        config_manager.set_selected_model(self.selected_model)
+        api_key = self.api_key_text.GetValue().strip()
+        if api_key:
+            config_manager.set_api_key(self.selected_model, api_key)
+        else:
+            config_manager.remove_api_key(self.selected_model)
+
         self.EndModal(wx.ID_OK)
 
 class SchematicLLMCheckerDialog(wx.Dialog):
@@ -102,7 +123,14 @@ class SchematicLLMCheckerDialog(wx.Dialog):
     def load_findings(self):
         """Load findings from schematic analysis."""
         try:
-            real_findings = run(SETTINGS['backend'], SETTINGS['api_key'])
+            selected_model = config_manager.get_selected_model()
+            api_key = config_manager.get_api_key(selected_model)
+
+            if not api_key:
+                wx.MessageBox(f"No API key configured for {selected_model}. Please configure it in Settings.", "Configuration Error", wx.OK | wx.ICON_WARNING)
+                return False
+
+            real_findings = run(selected_model, api_key)
             if real_findings:
                 self.findings = [FindingItem.from_finding(f) for f in real_findings]
                 self.filtered_findings = self.findings.copy()
