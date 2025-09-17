@@ -5,7 +5,9 @@ from config import config_manager
 from typing import List
 
 AVAILABLE_MODELS = [
-    "openai/gpt-4o-mini"
+    "openai/gpt-4o-mini",
+    "google/gemini-2.5-flash-lite",
+    "google/gemini-2.5-flash"
 ]
 
 class FindingItem:
@@ -61,7 +63,8 @@ class ConfigurationDialog(wx.Dialog):
         main_sizer.Add(backend_sizer, 0, wx.ALL | wx.EXPAND, 10)
 
         # API Key input
-        api_key_label = wx.StaticText(self, label=f"API Key for {self.selected_model}:")
+        provider = self.get_provider_from_model(self.selected_model)
+        api_key_label = wx.StaticText(self, label=f"API Key for {provider.upper()}:")
         self.api_key_label = api_key_label
         main_sizer.Add(api_key_label, 0, wx.ALL, 5)
 
@@ -85,16 +88,27 @@ class ConfigurationDialog(wx.Dialog):
 
         self.SetSizer(main_sizer)
 
+    def get_provider_from_model(self, model_name: str) -> str:
+        """Extract provider name from model name."""
+        if "/" in model_name:
+            return model_name.split("/")[0]
+        return model_name
+
     def on_backend_change(self, event):
         """Handle backend model change."""
         new_model = self.backend_choice.GetStringSelection()
         if new_model != self.selected_model:
+            old_provider = self.get_provider_from_model(self.selected_model)
+            new_provider = self.get_provider_from_model(new_model)
+
             self.selected_model = new_model
-            # Update API key field for the new model
+
+            # Update API key field for the new model's provider
             current_api_key = config_manager.get_api_key(self.selected_model) or ""
             self.api_key_text.SetValue(current_api_key)
-            # Update label
-            self.api_key_label.SetLabel(f"API Key for {self.selected_model}:")
+
+            # Update label to show provider instead of full model name
+            self.api_key_label.SetLabel(f"API Key for {new_provider.upper()}:")
             self.Layout()
 
     def on_cancel(self, event):

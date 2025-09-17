@@ -24,6 +24,10 @@ class LLMOperations:
             if api_key:
                 os.environ["OPENAI_API_KEY"] = api_key
             self.client = instructor.from_provider(model_name)
+        elif model_name.startswith("google/"):
+            if api_key:
+                os.environ["GEMINI_API_KEY"] = api_key
+            self.client = instructor.from_provider(model_name)
         else:
             raise ValueError(f"Provider {model_name} not supported with instructor library")
 

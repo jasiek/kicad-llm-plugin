@@ -1,6 +1,6 @@
 import json
 import os
-from typing import Dict, Optional
+from typing import Dict, Optional, List
 from pathlib import Path
 
 
@@ -22,7 +22,7 @@ class ConfigManager:
         # Return default configuration
         return {
             "selected_model": "openai/gpt-4o-mini",
-            "api_keys": {},
+            "provider_api_keys": {},
             "last_updated": None
         }
 
@@ -46,27 +46,49 @@ class ConfigManager:
         self._config["selected_model"] = model_name
         self._save_config()
 
+    def _extract_provider_from_model(self, model_name: str) -> str:
+        """Extract provider name from model name (e.g., 'openai/gpt-4' -> 'openai')."""
+        if "/" in model_name:
+            return model_name.split("/")[0]
+        return model_name
+
     def get_api_key(self, model_name: str) -> Optional[str]:
-        """Get API key for a specific model."""
-        return self._config["api_keys"].get(model_name)
+        """Get API key for a specific model by extracting its provider."""
+        provider = self._extract_provider_from_model(model_name)
+        return self._config.get("provider_api_keys", {}).get(provider)
 
-    def set_api_key(self, model_name: str, api_key: str) -> None:
-        """Set API key for a specific model."""
-        if "api_keys" not in self._config:
-            self._config["api_keys"] = {}
+    def set_api_key_for_provider(self, provider: str, api_key: str) -> None:
+        """Set API key for a specific provider."""
+        if "provider_api_keys" not in self._config:
+            self._config["provider_api_keys"] = {}
 
-        self._config["api_keys"][model_name] = api_key
+        self._config["provider_api_keys"][provider] = api_key
         self._save_config()
 
-    def get_all_api_keys(self) -> Dict[str, str]:
-        """Get all stored API keys."""
-        return self._config.get("api_keys", {}).copy()
+    def get_all_provider_api_keys(self) -> Dict[str, str]:
+        """Get all stored provider API keys."""
+        return self._config.get("provider_api_keys", {}).copy()
+
+    def remove_api_key_for_provider(self, provider: str) -> None:
+        """Remove API key for a specific provider."""
+        if "provider_api_keys" in self._config and provider in self._config["provider_api_keys"]:
+            del self._config["provider_api_keys"][provider]
+            self._save_config()
+
+    def get_providers_with_keys(self) -> List[str]:
+        """Get list of providers that have API keys configured."""
+        return list(self._config.get("provider_api_keys", {}).keys())
+
+    # Backward compatibility methods
+    def set_api_key(self, model_name: str, api_key: str) -> None:
+        """Set API key for a model (extracts provider automatically)."""
+        provider = self._extract_provider_from_model(model_name)
+        self.set_api_key_for_provider(provider, api_key)
 
     def remove_api_key(self, model_name: str) -> None:
-        """Remove API key for a specific model."""
-        if "api_keys" in self._config and model_name in self._config["api_keys"]:
-            del self._config["api_keys"][model_name]
-            self._save_config()
+        """Remove API key for a model (extracts provider automatically)."""
+        provider = self._extract_provider_from_model(model_name)
+        self.remove_api_key_for_provider(provider)
 
     def get_config_file_path(self) -> str:
         """Get the full path to the configuration file."""
