@@ -20,11 +20,7 @@ Focus on the schematic only, ignore everything related to PCB layout, including 
 
 class LLMOperations:
     def __init__(self, model_name, api_key):
-        self.client = instructor.from_provider(model_name)
-
-        provider = model_name.split('/')[0].upper()
-        # Ugly but that's how it's done for now.
-        os.environ[f"{provider}_API_KEY"] = api_key
+        self.client = instructor.from_provider(model_name, api_key=api_key)
 
     def analyze_netlist(self, netlist: str) -> Findings:
         response = self.client.chat.completions.create(

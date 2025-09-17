@@ -7,7 +7,7 @@ from typing import List
 AVAILABLE_MODELS = [
     "openai/gpt-4o-mini",
     "google/gemini-2.5-flash-lite",
-    "google/gemini-2.5-flash"
+    "google/gemini-2.5-flash",
 ]
 
 class FindingItem:
