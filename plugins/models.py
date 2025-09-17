@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import List, Literal
+from typing import List
 
 class FindingLevel:
     FATAL = "Fatal"
@@ -12,8 +12,8 @@ class FindingLevel:
 
 class Finding(BaseModel):
     id: int = Field(..., description="A unique identifier for the finding")
-    level: Literal["Fatal", "Major", "Minor", "Best Practice", "Nice To Have"] = Field(
-        ..., description="The severity level of the finding"
+    level: str = Field(
+        ..., description="The severity level of the finding (Fatal, Major, Minor, Best Practice, Nice To Have)"
     )
     description: str = Field(..., description="A brief description of the finding")
     recommendation: str = Field(..., description="A suggested action to address the finding")

@@ -19,7 +19,7 @@ Focus on the schematic only, ignore everything related to PCB layout, including 
 """
 
 class LLMOperations:
-    def __init__(self, model_name="openai/gpt-4o-mini", api_key: str = None):
+    def __init__(self, model_name, api_key):
         if model_name.startswith("openai/"):
             if api_key:
                 os.environ["OPENAI_API_KEY"] = api_key

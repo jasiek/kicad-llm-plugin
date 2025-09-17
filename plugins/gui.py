@@ -4,7 +4,14 @@ from core import run
 from typing import List
 
 # Global settings storage (in-memory for now)
-SETTINGS = {}
+SETTINGS = {
+    'backend': '"openai/gpt-4o-mini"',
+    'api_key': ''
+}
+
+AVAILABLE_MODELS = [
+    "openai/gpt-4o-mini"
+]
 
 class FindingItem:
     def __init__(self, level, description, location="", recommendation=""):
@@ -45,8 +52,8 @@ class ConfigurationDialog(wx.Dialog):
         backend_label = wx.StaticText(self, label="Backend:")
         backend_sizer.Add(backend_label, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
 
-        self.backend_choice = wx.Choice(self, choices=["ChatGPT 5"])
-        self.backend_choice.SetSelection(0)  # Default to ChatGPT 5
+        self.backend_choice = wx.Choice(self, choices=AVAILABLE_MODELS)
+        self.backend_choice.SetSelection(0) 
         backend_sizer.Add(self.backend_choice, 1, wx.ALL | wx.EXPAND, 5)
 
         main_sizer.Add(backend_sizer, 0, wx.ALL | wx.EXPAND, 10)
@@ -95,7 +102,7 @@ class SchematicLLMCheckerDialog(wx.Dialog):
     def load_findings(self):
         """Load findings from schematic analysis."""
         try:
-            real_findings = run()
+            real_findings = run(SETTINGS['backend'], SETTINGS['api_key'])
             if real_findings:
                 self.findings = [FindingItem.from_finding(f) for f in real_findings]
                 self.filtered_findings = self.findings.copy()
