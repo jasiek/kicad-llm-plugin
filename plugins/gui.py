@@ -1,9 +1,11 @@
 import wx
 import threading
+import csv
+import os
 from models import FindingLevel, Finding
 from core import run
 from config import config_manager
-from typing import List
+from typing import List, Optional
 
 AVAILABLE_MODELS = [
     "openai/gpt-4o-mini",
@@ -132,6 +134,7 @@ class SchematicLLMCheckerDialog(wx.Dialog):
 
         self.findings: List[FindingItem] = []
         self.filtered_findings: List[FindingItem] = []
+        self.project_path: Optional[str] = None
         self.setup_ui()
         self.update_findings_display()
 
@@ -159,7 +162,7 @@ class SchematicLLMCheckerDialog(wx.Dialog):
 
         main_sizer.Add(self.findings_list, 1, wx.ALL | wx.EXPAND, 5)
 
-        # Filter checkboxes
+        # Filter checkboxes and save button
         filter_box = wx.StaticBoxSizer(wx.StaticBox(self, label="Filter by Level"), wx.HORIZONTAL)
 
         self.checkboxes = {}
@@ -179,6 +182,14 @@ class SchematicLLMCheckerDialog(wx.Dialog):
             checkbox.Bind(wx.EVT_CHECKBOX, self.on_level_checkbox)
             self.checkboxes[level] = checkbox
             filter_box.Add(checkbox, 0, wx.ALL, 5)
+
+        # Add stretch spacer to push save button to the right
+        filter_box.AddStretchSpacer()
+
+        # Save findings button
+        self.save_button = wx.Button(self, label="Save findings...")
+        self.save_button.Bind(wx.EVT_BUTTON, self.on_save_findings)
+        filter_box.Add(self.save_button, 0, wx.ALL, 5)
 
         main_sizer.Add(filter_box, 0, wx.ALL | wx.EXPAND, 10)
 
@@ -285,10 +296,10 @@ class SchematicLLMCheckerDialog(wx.Dialog):
                 return
 
             # Run the analysis (this is the blocking operation)
-            real_findings = run(selected_model, api_key)
+            real_findings, project_path = run(selected_model, api_key)
 
             # Update UI on the main thread
-            wx.CallAfter(self._analysis_complete, real_findings)
+            wx.CallAfter(self._analysis_complete, real_findings, project_path)
 
         except Exception as e:
             wx.CallAfter(self._show_error, f"Error during analysis: {str(e)}", "Analysis Error")
@@ -296,8 +307,11 @@ class SchematicLLMCheckerDialog(wx.Dialog):
             # Re-enable the run button on the main thread
             wx.CallAfter(self._reset_run_button)
 
-    def _analysis_complete(self, real_findings):
+    def _analysis_complete(self, real_findings, project_path):
         """Handle analysis completion on the main thread."""
+        # Store the project path for use in save dialog
+        self.project_path = project_path
+
         if real_findings:
             self.findings = [FindingItem.from_finding(f) for f in real_findings]
             self.filtered_findings = self.findings.copy()
@@ -322,6 +336,51 @@ class SchematicLLMCheckerDialog(wx.Dialog):
         config_dialog = ConfigurationDialog(self)
         config_dialog.ShowModal()
         config_dialog.Destroy()
+
+    def on_save_findings(self, event):
+        """Save the currently displayed findings to a CSV file."""
+        if not self.filtered_findings:
+            wx.MessageBox("No findings to save. Please run an analysis first.", "No Data", wx.OK | wx.ICON_INFORMATION)
+            return
+
+        # Show file dialog to select save location
+        wildcard = "CSV files (*.csv)|*.csv|All files (*.*)|*.*"
+
+        # Use project path as default directory if available
+        default_dir = self.project_path if self.project_path else ""
+
+        dialog = wx.FileDialog(self, "Save findings as CSV",
+                             defaultDir=default_dir,
+                             defaultFile="schematic_findings.csv",
+                             wildcard=wildcard,
+                             style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT)
+
+        if dialog.ShowModal() == wx.ID_OK:
+            file_path = dialog.GetPath()
+            try:
+                self._export_to_csv(file_path)
+                wx.MessageBox(f"Findings saved to {file_path}", "Export Complete", wx.OK | wx.ICON_INFORMATION)
+            except Exception as e:
+                wx.MessageBox(f"Error saving file: {str(e)}", "Export Error", wx.OK | wx.ICON_ERROR)
+
+        dialog.Destroy()
+
+    def _export_to_csv(self, file_path: str):
+        """Export the filtered findings to a CSV file."""
+        with open(file_path, 'w', newline='', encoding='utf-8') as csvfile:
+            writer = csv.writer(csvfile)
+
+            # Write header
+            writer.writerow(['Level', 'Description', 'Location', 'Recommendation'])
+
+            # Write findings data
+            for finding in self.filtered_findings:
+                writer.writerow([
+                    finding.level,
+                    finding.description,
+                    finding.location,
+                    finding.recommendation
+                ])
 
     def on_close(self, event):
         self.EndModal(wx.ID_CLOSE)
