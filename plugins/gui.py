@@ -349,9 +349,16 @@ class SchematicLLMCheckerDialog(wx.Dialog):
         # Use project path as default directory if available
         default_dir = self.project_path if self.project_path else ""
 
+        # Use project name as default filename if available
+        if self.project_path:
+            project_name = os.path.basename(self.project_path)
+            default_filename = f"{project_name}.csv"
+        else:
+            default_filename = "schematic_findings.csv"
+
         dialog = wx.FileDialog(self, "Save findings as CSV",
                              defaultDir=default_dir,
-                             defaultFile="schematic_findings.csv",
+                             defaultFile=default_filename,
                              wildcard=wildcard,
                              style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT)
 
@@ -369,6 +376,15 @@ class SchematicLLMCheckerDialog(wx.Dialog):
         """Export the filtered findings to a CSV file."""
         with open(file_path, 'w', newline='', encoding='utf-8') as csvfile:
             writer = csv.writer(csvfile)
+
+            # Write model and timestamp information
+            from datetime import datetime
+            selected_model = config_manager.get_selected_model()
+            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            writer.writerow([f"Generated using model: {selected_model} at {timestamp}"])
+
+            # Write blank line
+            writer.writerow([])
 
             # Write header
             writer.writerow(['Level', 'Description', 'Location', 'Recommendation'])
