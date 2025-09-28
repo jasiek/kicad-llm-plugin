@@ -31,9 +31,16 @@ class LLMOperations:
         # Start timing the response
         start_time = time.time()
 
-        response = self.client.chat.completions.create(
-            response_model=Findings,
-            messages=[
+        # Create messages based on provider
+        if self.model_name.startswith("google/"):
+            # Google models use simple string content
+            messages = [
+                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "user", "content": USER_PROMPT_TEMPLATE + netlist}
+            ]
+        else:
+            # OpenAI and other models support content list with cache control
+            messages = [
                 {"role": "system", "content": SYSTEM_PROMPT},
                 {
                     "role": "user", "content": [
@@ -42,6 +49,10 @@ class LLMOperations:
                     ]
                 }
             ]
+
+        response = self.client.chat.completions.create(
+            response_model=Findings,
+            messages=messages
         )
 
         # Calculate response time
