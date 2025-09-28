@@ -8,7 +8,9 @@ from config import config_manager
 from typing import List, Optional
 
 AVAILABLE_MODELS = [
-    "openai/gpt-4o-mini",
+    "openai/gpt-5",
+    "openai/gpt-5-mini",
+    "openai/gpt-5-nano",
     "google/gemini-2.5-flash-lite",
     "google/gemini-2.5-flash",
 ]
