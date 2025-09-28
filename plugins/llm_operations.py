@@ -5,11 +5,11 @@ from models import Findings
 
 
 SYSTEM_PROMPT = """
-You are an expert electrical engineer and PCB designer with extensive experience in analyzing KiCad netlists.
-You are meticulous and detail-oriented, ensuring that every aspect of the netlist is thoroughly examined for potential issues and improvements.
+You are a helpful assistant that helps people find potential issues and improvements in KiCad netlists.
 """
 
 USER_PROMPT_TEMPLATE = """
+You are meticulous and detail-oriented, ensuring that every aspect of the netlist is thoroughly examined for potential issues and improvements.
 Given the following KiCad netlist, identify potential issues and suggest improvements.
 Focus on the schematic only, ignore everything related to PCB layout, including footprint assignments.
 
