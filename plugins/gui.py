@@ -2,7 +2,7 @@ import wx
 import threading
 import csv
 import os
-from models import FindingLevel, Finding
+from models import FindingLevel, Finding, TokenUsage
 from core import run
 from config import config_manager
 from typing import List, Optional
@@ -137,7 +137,7 @@ class SchematicLLMCheckerDialog(wx.Dialog):
         self.findings: List[FindingItem] = []
         self.filtered_findings: List[FindingItem] = []
         self.project_path: Optional[str] = None
-        self.token_usage: int = 0
+        self.token_usage: TokenUsage = TokenUsage()
         self.setup_ui()
         self.update_findings_display()
 
@@ -321,7 +321,7 @@ class SchematicLLMCheckerDialog(wx.Dialog):
         self.token_usage = token_usage
 
         # Update token usage display
-        self.token_usage_label.SetLabel(f"Tokens used: {token_usage}")
+        self.token_usage_label.SetLabel(f"Tokens used: {token_usage.get_breakdown_text()}")
 
         if real_findings:
             self.findings = [FindingItem.from_finding(f) for f in real_findings]
@@ -393,6 +393,7 @@ class SchematicLLMCheckerDialog(wx.Dialog):
             selected_model = config_manager.get_selected_model()
             timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             writer.writerow([f"Generated using model: {selected_model} at {timestamp}"])
+            writer.writerow([f"Token usage: {self.token_usage.get_breakdown_text()}"])
 
             # Write blank line
             writer.writerow([])
