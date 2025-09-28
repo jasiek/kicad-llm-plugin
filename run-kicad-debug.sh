@@ -1,0 +1,1 @@
+KICAD_LLM_LOG_LEVEL=TRACE KICAD_ENABLE_WXTRACE=1  WXTRACE=KICAD_API  /Applications/KiCad/KiCad.app/Contents/MacOS/kicad
