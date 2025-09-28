@@ -1,7 +1,7 @@
 import os
 
 import instructor
-from models import Findings
+from models import Findings, AnalysisResult
 
 
 SYSTEM_PROMPT = """
@@ -22,7 +22,7 @@ class LLMOperations:
     def __init__(self, model_name, api_key):
         self.client = instructor.from_provider(model_name, api_key=api_key)
 
-    def analyze_netlist(self, netlist: str) -> Findings:
+    def analyze_netlist(self, netlist: str) -> AnalysisResult:
         response = self.client.chat.completions.create(
             response_model=Findings,
             messages=[
@@ -30,4 +30,12 @@ class LLMOperations:
                 {"role": "user", "content": USER_PROMPT_TEMPLATE.format(netlist=netlist)}
             ]
         )
-        return response
+
+        # Extract token usage from response
+        token_usage = 0
+        if hasattr(response, '_raw_response') and response._raw_response:
+            usage = getattr(response._raw_response, 'usage', None)
+            if usage:
+                token_usage = getattr(usage, 'total_tokens', 0)
+
+        return AnalysisResult(findings=response.findings, token_usage=token_usage)

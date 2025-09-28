@@ -23,3 +23,9 @@ class Findings(BaseModel):
     findings: List[Finding] = Field(
         ..., description="List of findings from the schematic analysis"
     )
+
+class AnalysisResult:
+    """Container for analysis results including findings and token usage."""
+    def __init__(self, findings: List[Finding], token_usage: int = 0):
+        self.findings = findings
+        self.token_usage = token_usage

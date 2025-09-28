@@ -135,6 +135,7 @@ class SchematicLLMCheckerDialog(wx.Dialog):
         self.findings: List[FindingItem] = []
         self.filtered_findings: List[FindingItem] = []
         self.project_path: Optional[str] = None
+        self.token_usage: int = 0
         self.setup_ui()
         self.update_findings_display()
 
@@ -161,6 +162,10 @@ class SchematicLLMCheckerDialog(wx.Dialog):
         self.findings_list.AppendColumn("Location", width=150)
 
         main_sizer.Add(self.findings_list, 1, wx.ALL | wx.EXPAND, 5)
+
+        # Token usage display
+        self.token_usage_label = wx.StaticText(self, label="Tokens used: 0")
+        main_sizer.Add(self.token_usage_label, 0, wx.ALL, 5)
 
         # Filter checkboxes and save button
         filter_box = wx.StaticBoxSizer(wx.StaticBox(self, label="Filter by Level"), wx.HORIZONTAL)
@@ -296,10 +301,10 @@ class SchematicLLMCheckerDialog(wx.Dialog):
                 return
 
             # Run the analysis (this is the blocking operation)
-            real_findings, project_path = run(selected_model, api_key)
+            real_findings, project_path, token_usage = run(selected_model, api_key)
 
             # Update UI on the main thread
-            wx.CallAfter(self._analysis_complete, real_findings, project_path)
+            wx.CallAfter(self._analysis_complete, real_findings, project_path, token_usage)
 
         except Exception as e:
             wx.CallAfter(self._show_error, f"Error during analysis: {str(e)}", "Analysis Error")
@@ -307,10 +312,14 @@ class SchematicLLMCheckerDialog(wx.Dialog):
             # Re-enable the run button on the main thread
             wx.CallAfter(self._reset_run_button)
 
-    def _analysis_complete(self, real_findings, project_path):
+    def _analysis_complete(self, real_findings, project_path, token_usage):
         """Handle analysis completion on the main thread."""
-        # Store the project path for use in save dialog
+        # Store the project path and token usage
         self.project_path = project_path
+        self.token_usage = token_usage
+
+        # Update token usage display
+        self.token_usage_label.SetLabel(f"Tokens used: {token_usage}")
 
         if real_findings:
             self.findings = [FindingItem.from_finding(f) for f in real_findings]
