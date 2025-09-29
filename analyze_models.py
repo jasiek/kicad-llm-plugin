@@ -98,6 +98,166 @@ class MultiModelAnalyzer:
 
         print(f"  Saved {len(findings)} findings to {filepath}")
 
+    def save_to_html(self, model_name: str, findings: List[Finding], token_usage: TokenUsage):
+        """Save findings to HTML file."""
+        # Create safe filename from model name
+        safe_model_name = model_name.replace("/", "_")
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        filename = f"{safe_model_name}_{timestamp}.html"
+        filepath = self.output_dir / filename
+
+        # Define colors for each severity level
+        level_colors = {
+            "Fatal": "#8b0000",      # Dark red
+            "Major": "#ff0000",      # Red
+            "Minor": "#ffa500",      # Orange
+            "Best Practice": "#0000ff",  # Blue
+            "Nice To Have": "#808080"    # Gray
+        }
+
+        # Sort findings by severity
+        level_priority = {"Fatal": 0, "Major": 1, "Minor": 2, "Best Practice": 3, "Nice To Have": 4}
+        sorted_findings = sorted(findings, key=lambda f: level_priority.get(f.level, 99))
+
+        html_content = f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Schematic Analysis Findings - {model_name}</title>
+    <style>
+        body {{
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+            line-height: 1.6;
+        }}
+
+        .container {{
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }}
+
+        .header {{
+            border-bottom: 2px solid #e0e0e0;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }}
+
+        .header h1 {{
+            color: #333;
+            margin: 0 0 10px 0;
+            font-size: 28px;
+        }}
+
+        .metadata {{
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            border-left: 4px solid #007bff;
+        }}
+
+        .findings-table {{
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }}
+
+        .findings-table th {{
+            background-color: #343a40;
+            color: white;
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+        }}
+
+        .findings-table td {{
+            padding: 12px;
+            border-bottom: 1px solid #e0e0e0;
+            vertical-align: top;
+        }}
+
+        .findings-table tr:nth-child(even) {{
+            background-color: #f8f9fa;
+        }}
+
+        .level-badge {{
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+            color: white;
+            text-transform: uppercase;
+        }}
+
+        .location {{
+            font-family: monospace;
+            background-color: #f1f3f4;
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-size: 13px;
+        }}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Schematic Analysis Findings</h1>
+            <h2 style="color: #666; font-weight: normal; margin: 0;">{model_name}</h2>
+        </div>
+
+        <div class="metadata">
+            <p><strong>Generated:</strong> {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}</p>
+            <p><strong>Model:</strong> {model_name}</p>
+            <p><strong>Token Usage:</strong> {token_usage.get_breakdown_text()}</p>
+            <p><strong>Total Findings:</strong> {len(findings)}</p>
+        </div>
+
+        <table class="findings-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Level</th>
+                    <th>Description</th>
+                    <th>Location</th>
+                    <th>Recommendation</th>
+                </tr>
+            </thead>
+            <tbody>
+"""
+
+        for finding in sorted_findings:
+            level_color = level_colors.get(finding.level, "#666666")
+            description_html = finding.description.replace('\n', '<br>')
+            recommendation_html = finding.recommendation.replace('\n', '<br>')
+
+            html_content += f"""                <tr>
+                    <td>{finding.id}</td>
+                    <td><span class="level-badge" style="background-color: {level_color}">{finding.level}</span></td>
+                    <td>{description_html}</td>
+                    <td><span class="location">{finding.reference}</span></td>
+                    <td>{recommendation_html}</td>
+                </tr>
+"""
+
+        html_content += """            </tbody>
+        </table>
+    </div>
+</body>
+</html>"""
+
+        with open(filepath, 'w', encoding='utf-8') as htmlfile:
+            htmlfile.write(html_content)
+
+        print(f"  Saved {len(findings)} findings to {filepath}")
+
     def save_summary_csv(self, results: Dict[str, AnalysisResult]):
         """Save summary of all model results to a CSV file."""
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -161,7 +321,7 @@ class MultiModelAnalyzer:
             results[model_name] = result
 
             if result and result.findings:
-                self.save_to_csv(model_name, result.findings, result.token_usage)
+                self.save_to_html(model_name, result.findings, result.token_usage)
                 print(f"  Token usage: {result.token_usage.get_breakdown_text()}")
 
             print()  # Add spacing between models

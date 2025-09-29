@@ -1,6 +1,5 @@
 import wx
 import threading
-import csv
 import os
 from models import FindingLevel, Finding, TokenUsage
 from core import run
@@ -213,7 +212,7 @@ class SchematicLLMCheckerDialog(wx.Dialog):
         filter_box.AddStretchSpacer()
 
         # Save findings button
-        self.save_button = wx.Button(self, label="Save findings...")
+        self.save_button = wx.Button(self, label="Export HTML...")
         self.save_button.Bind(wx.EVT_BUTTON, self.on_save_findings)
         filter_box.Add(self.save_button, 0, wx.ALL, 5)
 
@@ -375,13 +374,13 @@ class SchematicLLMCheckerDialog(wx.Dialog):
         config_dialog.Destroy()
 
     def on_save_findings(self, event):
-        """Save the currently displayed findings to a CSV file."""
+        """Save the currently displayed findings to an HTML file."""
         if not self.filtered_findings:
             wx.MessageBox("No findings to save. Please run an analysis first.", "No Data", wx.OK | wx.ICON_INFORMATION)
             return
 
         # Show file dialog to select save location
-        wildcard = "CSV files (*.csv)|*.csv|All files (*.*)|*.*"
+        wildcard = "HTML files (*.html)|*.html|All files (*.*)|*.*"
 
         # Use project path as default directory if available
         default_dir = self.project_path if self.project_path else ""
@@ -389,11 +388,11 @@ class SchematicLLMCheckerDialog(wx.Dialog):
         # Use project name as default filename if available
         if self.project_path:
             project_name = os.path.basename(self.project_path)
-            default_filename = f"{project_name}.csv"
+            default_filename = f"{project_name}_findings.html"
         else:
-            default_filename = "schematic_findings.csv"
+            default_filename = "schematic_findings.html"
 
-        dialog = wx.FileDialog(self, "Save findings as CSV",
+        dialog = wx.FileDialog(self, "Save findings as HTML",
                              defaultDir=default_dir,
                              defaultFile=default_filename,
                              wildcard=wildcard,
@@ -402,39 +401,248 @@ class SchematicLLMCheckerDialog(wx.Dialog):
         if dialog.ShowModal() == wx.ID_OK:
             file_path = dialog.GetPath()
             try:
-                self._export_to_csv(file_path)
+                self._export_to_html(file_path)
                 wx.MessageBox(f"Findings saved to {file_path}", "Export Complete", wx.OK | wx.ICON_INFORMATION)
             except Exception as e:
                 wx.MessageBox(f"Error saving file: {str(e)}", "Export Error", wx.OK | wx.ICON_ERROR)
 
         dialog.Destroy()
 
-    def _export_to_csv(self, file_path: str):
-        """Export the filtered findings to a CSV file."""
-        with open(file_path, 'w', newline='', encoding='utf-8') as csvfile:
-            writer = csv.writer(csvfile)
+    def _export_to_html(self, file_path: str):
+        """Export the filtered findings to an HTML file with embedded styles."""
+        from datetime import datetime
+        selected_model = config_manager.get_selected_model()
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        project_name = os.path.basename(self.project_path) if self.project_path else "Unknown Project"
 
-            # Write model and timestamp information
-            from datetime import datetime
-            selected_model = config_manager.get_selected_model()
-            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            writer.writerow([f"Generated using model: {selected_model} at {timestamp}"])
-            writer.writerow([f"Token usage: {self.token_usage.get_breakdown_text()}"])
+        # Define colors for each severity level
+        level_colors = {
+            "Fatal": "#8b0000",      # Dark red
+            "Major": "#ff0000",      # Red
+            "Minor": "#ffa500",      # Orange
+            "Best Practice": "#0000ff",  # Blue
+            "Nice To Have": "#808080"    # Gray
+        }
 
-            # Write blank line
-            writer.writerow([])
+        html_content = f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Schematic Analysis Findings - {project_name}</title>
+    <style>
+        body {{
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+            line-height: 1.6;
+        }}
 
-            # Write header
-            writer.writerow(['Level', 'Description', 'Location', 'Recommendation'])
+        .container {{
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }}
 
-            # Write findings data
+        .header {{
+            border-bottom: 2px solid #e0e0e0;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }}
+
+        .header h1 {{
+            color: #333;
+            margin: 0 0 10px 0;
+            font-size: 28px;
+        }}
+
+        .metadata {{
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            border-left: 4px solid #007bff;
+        }}
+
+        .metadata p {{
+            margin: 5px 0;
+            color: #666;
+        }}
+
+        .summary {{
+            display: flex;
+            gap: 20px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }}
+
+        .summary-card {{
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 4px;
+            flex: 1;
+            min-width: 150px;
+            text-align: center;
+            border: 1px solid #e0e0e0;
+        }}
+
+        .summary-card h3 {{
+            margin: 0 0 10px 0;
+            color: #333;
+            font-size: 14px;
+            text-transform: uppercase;
+        }}
+
+        .summary-card .number {{
+            font-size: 24px;
+            font-weight: bold;
+            color: #007bff;
+        }}
+
+        .findings-table {{
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }}
+
+        .findings-table th {{
+            background-color: #343a40;
+            color: white;
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+        }}
+
+        .findings-table td {{
+            padding: 12px;
+            border-bottom: 1px solid #e0e0e0;
+            vertical-align: top;
+        }}
+
+        .findings-table tr:nth-child(even) {{
+            background-color: #f8f9fa;
+        }}
+
+        .findings-table tr:hover {{
+            background-color: #e9ecef;
+        }}
+
+        .level-badge {{
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+            color: white;
+            text-transform: uppercase;
+        }}
+
+        .location {{
+            font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
+            background-color: #f1f3f4;
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-size: 13px;
+        }}
+
+        .description {{
+            max-width: 400px;
+            word-wrap: break-word;
+        }}
+
+        .recommendation {{
+            max-width: 350px;
+            word-wrap: break-word;
+            color: #666;
+            font-style: italic;
+        }}
+
+        .no-findings {{
+            text-align: center;
+            color: #666;
+            font-style: italic;
+            padding: 40px;
+        }}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Schematic Analysis Findings</h1>
+            <h2 style="color: #666; font-weight: normal; margin: 0;">{project_name}</h2>
+        </div>
+
+        <div class="metadata">
+            <p><strong>Generated:</strong> {timestamp}</p>
+            <p><strong>Model:</strong> {selected_model}</p>
+            <p><strong>Token Usage:</strong> {self.token_usage.get_breakdown_text()}</p>
+            <p><strong>Total Findings:</strong> {len(self.filtered_findings)}</p>
+        </div>
+"""
+
+        # Add summary cards
+        if self.filtered_findings:
+            level_counts = {}
+            for level in ["Fatal", "Major", "Minor", "Best Practice", "Nice To Have"]:
+                count = sum(1 for f in self.filtered_findings if f.level == level)
+                level_counts[level] = count
+
+            html_content += '        <div class="summary">\n'
+            for level, count in level_counts.items():
+                if count > 0:
+                    html_content += f'''            <div class="summary-card">
+                <h3>{level}</h3>
+                <div class="number" style="color: {level_colors.get(level, '#007bff')}">{count}</div>
+            </div>
+'''
+            html_content += '        </div>\n\n'
+
+        # Add findings table
+        if self.filtered_findings:
+            html_content += '''        <table class="findings-table">
+            <thead>
+                <tr>
+                    <th>Level</th>
+                    <th>Description</th>
+                    <th>Location</th>
+                    <th>Recommendation</th>
+                </tr>
+            </thead>
+            <tbody>
+'''
+
             for finding in self.filtered_findings:
-                writer.writerow([
-                    finding.level,
-                    finding.description,
-                    finding.location,
-                    finding.recommendation
-                ])
+                level_color = level_colors.get(finding.level, "#666666")
+                description_html = finding.description.replace('\n', '<br>')
+                recommendation_html = finding.recommendation.replace('\n', '<br>')
+
+                html_content += f'''                <tr>
+                    <td><span class="level-badge" style="background-color: {level_color}">{finding.level}</span></td>
+                    <td class="description">{description_html}</td>
+                    <td><span class="location">{finding.location}</span></td>
+                    <td class="recommendation">{recommendation_html}</td>
+                </tr>
+'''
+
+            html_content += '''            </tbody>
+        </table>
+'''
+        else:
+            html_content += '''        <div class="no-findings">
+            <p>No findings to display.</p>
+        </div>
+'''
+
+        html_content += '''    </div>
+</body>
+</html>'''
+
+        with open(file_path, 'w', encoding='utf-8') as htmlfile:
+            htmlfile.write(html_content)
 
     def on_mouse_motion(self, event):
         """Handle mouse motion over the findings list to show tooltips."""
