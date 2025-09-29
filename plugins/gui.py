@@ -138,6 +138,16 @@ class SchematicLLMCheckerDialog(wx.Dialog):
         self.filtered_findings: List[FindingItem] = []
         self.project_path: Optional[str] = None
         self.token_usage: TokenUsage = TokenUsage()
+
+        # Define severity level priority for sorting (lower number = higher priority)
+        self.level_priority = {
+            FindingLevel.FATAL: 0,
+            FindingLevel.MAJOR: 1,
+            FindingLevel.MINOR: 2,
+            FindingLevel.BEST_PRACTICE: 3,
+            FindingLevel.NICE_TO_HAVE: 4
+        }
+
         self.setup_ui()
         self.update_findings_display()
 
@@ -230,14 +240,19 @@ class SchematicLLMCheckerDialog(wx.Dialog):
 
         self.SetSizer(main_sizer)
 
+    def sort_findings(self, findings_list: List[FindingItem]) -> List[FindingItem]:
+        """Sort findings by severity level, with Fatal at the top."""
+        return sorted(findings_list, key=lambda f: self.level_priority.get(f.level, 99))
+
     def apply_current_filters(self):
         """Apply the current filter settings to the findings."""
         if self.all_checkbox.GetValue():
-            self.filtered_findings = self.findings.copy()
+            self.filtered_findings = self.sort_findings(self.findings.copy())
         else:
             selected_levels = [level for level, checkbox in self.checkboxes.items() if checkbox.GetValue()]
             if selected_levels:
-                self.filtered_findings = [f for f in self.findings if f.level in selected_levels]
+                filtered = [f for f in self.findings if f.level in selected_levels]
+                self.filtered_findings = self.sort_findings(filtered)
             else:
                 self.filtered_findings = []
 
@@ -246,8 +261,8 @@ class SchematicLLMCheckerDialog(wx.Dialog):
             # Deselect all individual checkboxes
             for checkbox in self.checkboxes.values():
                 checkbox.SetValue(False)
-            # Show all findings
-            self.filtered_findings = self.findings.copy()
+            # Show all findings, sorted
+            self.filtered_findings = self.sort_findings(self.findings.copy())
         else:
             # If "All" is unchecked, show no findings
             self.filtered_findings = []
@@ -263,7 +278,8 @@ class SchematicLLMCheckerDialog(wx.Dialog):
         selected_levels = [level for level, checkbox in self.checkboxes.items() if checkbox.GetValue()]
 
         if selected_levels:
-            self.filtered_findings = [f for f in self.findings if f.level in selected_levels]
+            filtered = [f for f in self.findings if f.level in selected_levels]
+            self.filtered_findings = self.sort_findings(filtered)
         else:
             # If no individual levels are selected, show nothing
             self.filtered_findings = []
@@ -334,6 +350,7 @@ class SchematicLLMCheckerDialog(wx.Dialog):
 
         if real_findings:
             self.findings = [FindingItem.from_finding(f) for f in real_findings]
+            self.findings = self.sort_findings(self.findings)  # Sort the initial findings
             self.filtered_findings = self.findings.copy()
             self.apply_current_filters()
             self.update_findings_display()
