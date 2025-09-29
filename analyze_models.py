@@ -34,8 +34,9 @@ AVAILABLE_MODELS = [
 ]
 
 class MultiModelAnalyzer:
-    def __init__(self, netlist_path: str, output_dir: str = "outputs"):
+    def __init__(self, netlist_path: str, schematic_path: str = None, output_dir: str = "outputs"):
         self.netlist_path = netlist_path
+        self.schematic_path = schematic_path
         self.output_dir = Path(output_dir)
         self.output_dir.mkdir(exist_ok=True)
         self.config_manager = ConfigManager()
@@ -43,6 +44,15 @@ class MultiModelAnalyzer:
         # Load netlist content
         with open(netlist_path, 'r') as f:
             self.netlist_content = f.read()
+
+        # Load schematic content if provided
+        self.schematic_content = None
+        if schematic_path and os.path.exists(schematic_path):
+            try:
+                with open(schematic_path, 'r', encoding='utf-8') as f:
+                    self.schematic_content = f.read()
+            except Exception as e:
+                print(f"Warning: Could not read schematic file {schematic_path}: {e}")
 
     def get_available_models_with_keys(self) -> List[str]:
         """Get list of models that have API keys available."""
@@ -63,8 +73,15 @@ class MultiModelAnalyzer:
         try:
             print(f"Running analysis with {model_name}...")
             llm_ops = LLMOperations(model_name, api_key)
-            result = llm_ops.analyze_netlist(self.netlist_content)
-            print(f"✓ {model_name}: {len(result.findings)} findings")
+
+            # Use combined schematic and netlist analysis if schematic is available
+            if self.schematic_content:
+                result = llm_ops.analyze_schematic_and_netlist(self.netlist_content, self.schematic_content)
+                print(f"✓ {model_name}: {len(result.findings)} findings (schematic + netlist)")
+            else:
+                result = llm_ops.analyze_netlist(self.netlist_content)
+                print(f"✓ {model_name}: {len(result.findings)} findings (netlist only)")
+
             return result
         except Exception as e:
             print(f"✗ {model_name}: Error - {str(e)}")
@@ -311,6 +328,10 @@ class MultiModelAnalyzer:
 
         print(f"Found API keys for {len(available_models)} models: {', '.join(available_models)}")
         print(f"Analyzing netlist: {self.netlist_path}")
+        if self.schematic_content:
+            print(f"Including schematic: {self.schematic_path}")
+        else:
+            print("No schematic file provided - analyzing netlist only")
         print(f"Output directory: {self.output_dir}")
         print("-" * 60)
 
@@ -333,7 +354,7 @@ class MultiModelAnalyzer:
 
 def main():
     parser = argparse.ArgumentParser(
-        description='Run LLM analysis on a netlist using multiple models'
+        description='Run LLM analysis on a netlist and optional schematic using multiple models'
     )
     parser.add_argument(
         '--netlist',
@@ -341,9 +362,13 @@ def main():
         help='Path to the netlist file (.net)'
     )
     parser.add_argument(
+        '--schematic',
+        help='Path to the schematic file (.kicad_sch) for enhanced analysis'
+    )
+    parser.add_argument(
         '--output-dir',
         default='outputs',
-        help='Output directory for CSV files (default: outputs)'
+        help='Output directory for HTML files (default: outputs)'
     )
 
     args = parser.parse_args()
@@ -353,8 +378,13 @@ def main():
         print(f"Error: Netlist file not found: {args.netlist}")
         sys.exit(1)
 
+    # Validate schematic file if provided
+    if args.schematic and not os.path.exists(args.schematic):
+        print(f"Error: Schematic file not found: {args.schematic}")
+        sys.exit(1)
+
     # Run analysis
-    analyzer = MultiModelAnalyzer(args.netlist, args.output_dir)
+    analyzer = MultiModelAnalyzer(args.netlist, args.schematic, args.output_dir)
     results = analyzer.run_analysis()
 
     # Print final summary
