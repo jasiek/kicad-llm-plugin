@@ -163,6 +163,15 @@ class SchematicLLMCheckerDialog(wx.Dialog):
         self.findings_list.AppendColumn("Description", width=400)
         self.findings_list.AppendColumn("Location", width=150)
 
+        # Bind mouse motion event for tooltips
+        self.findings_list.Bind(wx.EVT_MOTION, self.on_mouse_motion)
+        self.findings_list.Bind(wx.EVT_LEAVE_WINDOW, self.on_leave_window)
+
+        # Initialize tooltip tracking
+        self.current_tooltip_item = -1
+        self.tooltip_timer = wx.Timer(self)
+        self.Bind(wx.EVT_TIMER, self.on_tooltip_timer)
+
         main_sizer.Add(self.findings_list, 1, wx.ALL | wx.EXPAND, 5)
 
         # Token usage display
@@ -410,8 +419,60 @@ class SchematicLLMCheckerDialog(wx.Dialog):
                     finding.recommendation
                 ])
 
+    def on_mouse_motion(self, event):
+        """Handle mouse motion over the findings list to show tooltips."""
+        # Get the item and column under the mouse
+        item, flags = self.findings_list.HitTest(event.GetPosition())
+
+        if item != wx.NOT_FOUND and item < len(self.filtered_findings):
+            if item != self.current_tooltip_item:
+                # Mouse moved to a new item
+                self.current_tooltip_item = item
+                self.tooltip_timer.Stop()
+                self.tooltip_timer.Start(100, True) # 100ms
+
+                # Hide existing tooltip
+                self.findings_list.SetToolTip(None)
+        else:
+            # Mouse not over a valid item
+            if self.current_tooltip_item != -1:
+                self.current_tooltip_item = -1
+                self.tooltip_timer.Stop()
+                self.findings_list.SetToolTip(None)
+
+        event.Skip()
+
+    def on_leave_window(self, event):
+        """Handle mouse leaving the findings list window."""
+        self.current_tooltip_item = -1
+        self.tooltip_timer.Stop()
+        self.findings_list.SetToolTip(None)
+        event.Skip()
+
+    def on_tooltip_timer(self, event):
+        """Show tooltip after timer expires."""
+        if self.current_tooltip_item >= 0 and self.current_tooltip_item < len(self.filtered_findings):
+            finding = self.filtered_findings[self.current_tooltip_item]
+
+            # Create comprehensive tooltip text
+            tooltip_text = f"Level: {finding.level}\n"
+            tooltip_text += f"Location: {finding.location}\n\n"
+            tooltip_text += f"Description:\n{finding.description}\n\n"
+            tooltip_text += f"Recommendation:\n{finding.recommendation}"
+
+            self.findings_list.SetToolTip(tooltip_text)
+
     def on_close(self, event):
+        # Clean up timer
+        if hasattr(self, 'tooltip_timer'):
+            self.tooltip_timer.Stop()
         self.EndModal(wx.ID_CLOSE)
+
+    def Destroy(self):
+        # Clean up timer before destroying
+        if hasattr(self, 'tooltip_timer'):
+            self.tooltip_timer.Stop()
+        super().Destroy()
 
 def show_dialog():
     app = wx.App(False)

@@ -23,6 +23,10 @@ for example: `~/Documents/KiCad/9.0/plugins` on Mac OS X.
 
 Send me your PRs yo.
 
+## Ideas
+
+- (Pull datasheets for all components)[https://old.reddit.com/r/KiCad/comments/1nsvhj2/llmbased_plugin_for_kicad_for_analysing_schematics/ngpmehr/].
+
 ## License
 
 Distributed under the MIT License. See [`LICENSE`](LICENSE) for details.
