@@ -4,7 +4,8 @@ This plugin lets you inspect your schematic with an LLM (you can choose the mode
 improve your design. It will identify fatal flaws, good practices and nice-to-haves. It supports models which run locally
 and remotely.
 
-![Plugin Screenshot](images/2025-09-17.png)
+![Plugin Screenshot](images/2025-09-29-gui.png)
+![Sample report](images/2025-09-29-report.png)
 
 ## Installation
 
