@@ -7,12 +7,15 @@ from config import config_manager
 from typing import List, Optional
 
 AVAILABLE_MODELS = [
-    "openai/gpt-5",
+    "openai/gpt-5.1",
+    "openai/gpt-5.2",
     "openai/gpt-5-mini",
     "openai/gpt-5-nano",
     "google/gemini-2.5-flash-lite",
     "google/gemini-2.5-flash",
+    "google/gemini-3-pro-preview",
 ]
+
 
 class FindingItem:
     def __init__(self, level, description, location="", recommendation=""):
@@ -28,7 +31,7 @@ class FindingItem:
             level=finding.level,
             description=finding.description,
             location=finding.reference,
-            recommendation=finding.recommendation
+            recommendation=finding.recommendation,
         )
 
     def __str__(self):
@@ -36,6 +39,7 @@ class FindingItem:
             return f"[{self.level}] {self.description} (at {self.location})"
         else:
             return f"[{self.level}] {self.description}"
+
 
 class ConfigurationDialog(wx.Dialog):
     def __init__(self, parent=None):
@@ -73,7 +77,9 @@ class ConfigurationDialog(wx.Dialog):
         main_sizer.Add(api_key_label, 0, wx.ALL, 5)
 
         current_api_key = config_manager.get_api_key(self.selected_model) or ""
-        self.api_key_text = wx.TextCtrl(self, value=current_api_key, style=wx.TE_PASSWORD)
+        self.api_key_text = wx.TextCtrl(
+            self, value=current_api_key, style=wx.TE_PASSWORD
+        )
         main_sizer.Add(self.api_key_text, 0, wx.ALL | wx.EXPAND, 5)
 
         # Buttons
@@ -129,6 +135,7 @@ class ConfigurationDialog(wx.Dialog):
 
         self.EndModal(wx.ID_OK)
 
+
 class SchematicLLMCheckerDialog(wx.Dialog):
     def __init__(self, parent=None):
         super().__init__(parent, title="Schematic LLM Checker", size=(800, 600))
@@ -144,12 +151,11 @@ class SchematicLLMCheckerDialog(wx.Dialog):
             FindingLevel.MAJOR: 1,
             FindingLevel.MINOR: 2,
             FindingLevel.BEST_PRACTICE: 3,
-            FindingLevel.NICE_TO_HAVE: 4
+            FindingLevel.NICE_TO_HAVE: 4,
         }
 
         self.setup_ui()
         self.update_findings_display()
-
 
     def setup_ui(self):
         # Main sizer
@@ -188,7 +194,9 @@ class SchematicLLMCheckerDialog(wx.Dialog):
         main_sizer.Add(self.token_usage_label, 0, wx.ALL, 5)
 
         # Filter checkboxes and save button
-        filter_box = wx.StaticBoxSizer(wx.StaticBox(self, label="Filter by Level"), wx.HORIZONTAL)
+        filter_box = wx.StaticBoxSizer(
+            wx.StaticBox(self, label="Filter by Level"), wx.HORIZONTAL
+        )
 
         self.checkboxes = {}
 
@@ -198,7 +206,9 @@ class SchematicLLMCheckerDialog(wx.Dialog):
         self.all_checkbox.Bind(wx.EVT_CHECKBOX, self.on_all_checkbox)
         filter_box.Add(self.all_checkbox, 0, wx.ALL, 5)
 
-        filter_box.Add(wx.StaticLine(self, style=wx.LI_VERTICAL), 0, wx.ALL | wx.EXPAND, 5)
+        filter_box.Add(
+            wx.StaticLine(self, style=wx.LI_VERTICAL), 0, wx.ALL | wx.EXPAND, 5
+        )
 
         # Individual level checkboxes
         for level in FindingLevel.ALL_LEVELS:
@@ -248,7 +258,11 @@ class SchematicLLMCheckerDialog(wx.Dialog):
         if self.all_checkbox.GetValue():
             self.filtered_findings = self.sort_findings(self.findings.copy())
         else:
-            selected_levels = [level for level, checkbox in self.checkboxes.items() if checkbox.GetValue()]
+            selected_levels = [
+                level
+                for level, checkbox in self.checkboxes.items()
+                if checkbox.GetValue()
+            ]
             if selected_levels:
                 filtered = [f for f in self.findings if f.level in selected_levels]
                 self.filtered_findings = self.sort_findings(filtered)
@@ -274,7 +288,9 @@ class SchematicLLMCheckerDialog(wx.Dialog):
             self.all_checkbox.SetValue(False)
 
         # Filter findings based on selected levels
-        selected_levels = [level for level, checkbox in self.checkboxes.items() if checkbox.GetValue()]
+        selected_levels = [
+            level for level, checkbox in self.checkboxes.items() if checkbox.GetValue()
+        ]
 
         if selected_levels:
             filtered = [f for f in self.findings if f.level in selected_levels]
@@ -295,15 +311,23 @@ class SchematicLLMCheckerDialog(wx.Dialog):
 
             # Set color based on level
             if finding.level == FindingLevel.FATAL:
-                self.findings_list.SetItemTextColour(index, wx.Colour(139, 0, 0))  # Dark red
+                self.findings_list.SetItemTextColour(
+                    index, wx.Colour(139, 0, 0)
+                )  # Dark red
             elif finding.level == FindingLevel.MAJOR:
                 self.findings_list.SetItemTextColour(index, wx.Colour(255, 0, 0))  # Red
             elif finding.level == FindingLevel.MINOR:
-                self.findings_list.SetItemTextColour(index, wx.Colour(255, 165, 0))  # Orange
+                self.findings_list.SetItemTextColour(
+                    index, wx.Colour(255, 165, 0)
+                )  # Orange
             elif finding.level == FindingLevel.BEST_PRACTICE:
-                self.findings_list.SetItemTextColour(index, wx.Colour(0, 0, 255))  # Blue
+                self.findings_list.SetItemTextColour(
+                    index, wx.Colour(0, 0, 255)
+                )  # Blue
             elif finding.level == FindingLevel.NICE_TO_HAVE:
-                self.findings_list.SetItemTextColour(index, wx.Colour(128, 128, 128))  # Gray
+                self.findings_list.SetItemTextColour(
+                    index, wx.Colour(128, 128, 128)
+                )  # Gray
 
     def on_run(self, event):
         """Run the schematic analysis and update findings."""
@@ -323,17 +347,25 @@ class SchematicLLMCheckerDialog(wx.Dialog):
             api_key = config_manager.get_api_key(selected_model)
 
             if not api_key:
-                wx.CallAfter(self._show_error, f"No API key configured for {selected_model}. Please configure it in Settings.", "Configuration Error")
+                wx.CallAfter(
+                    self._show_error,
+                    f"No API key configured for {selected_model}. Please configure it in Settings.",
+                    "Configuration Error",
+                )
                 return
 
             # Run the analysis (this is the blocking operation)
             real_findings, project_path, token_usage = run(selected_model, api_key)
 
             # Update UI on the main thread
-            wx.CallAfter(self._analysis_complete, real_findings, project_path, token_usage)
+            wx.CallAfter(
+                self._analysis_complete, real_findings, project_path, token_usage
+            )
 
         except Exception as e:
-            wx.CallAfter(self._show_error, f"Error during analysis: {str(e)}", "Analysis Error")
+            wx.CallAfter(
+                self._show_error, f"Error during analysis: {str(e)}", "Analysis Error"
+            )
         finally:
             # Re-enable the run button on the main thread
             wx.CallAfter(self._reset_run_button)
@@ -345,18 +377,26 @@ class SchematicLLMCheckerDialog(wx.Dialog):
         self.token_usage = token_usage
 
         # Update token usage display
-        self.token_usage_label.SetLabel(f"Tokens used: {token_usage.get_breakdown_text()}")
+        self.token_usage_label.SetLabel(
+            f"Tokens used: {token_usage.get_breakdown_text()}"
+        )
 
         if real_findings:
             self.findings = [FindingItem.from_finding(f) for f in real_findings]
-            self.findings = self.sort_findings(self.findings)  # Sort the initial findings
+            self.findings = self.sort_findings(
+                self.findings
+            )  # Sort the initial findings
             self.filtered_findings = self.findings.copy()
             self.apply_current_filters()
             self.update_findings_display()
         else:
             self.findings = []
             self.filtered_findings = []
-            wx.MessageBox("No findings from analysis. The schematic may have no issues or analysis failed.", "Analysis Complete", wx.OK | wx.ICON_INFORMATION)
+            wx.MessageBox(
+                "No findings from analysis. The schematic may have no issues or analysis failed.",
+                "Analysis Complete",
+                wx.OK | wx.ICON_INFORMATION,
+            )
             self.update_findings_display()
 
     def _show_error(self, message, title):
@@ -376,7 +416,11 @@ class SchematicLLMCheckerDialog(wx.Dialog):
     def on_save_findings(self, event):
         """Save the currently displayed findings to an HTML file."""
         if not self.filtered_findings:
-            wx.MessageBox("No findings to save. Please run an analysis first.", "No Data", wx.OK | wx.ICON_INFORMATION)
+            wx.MessageBox(
+                "No findings to save. Please run an analysis first.",
+                "No Data",
+                wx.OK | wx.ICON_INFORMATION,
+            )
             return
 
         # Show file dialog to select save location
@@ -392,36 +436,52 @@ class SchematicLLMCheckerDialog(wx.Dialog):
         else:
             default_filename = "schematic_findings.html"
 
-        dialog = wx.FileDialog(self, "Save findings as HTML",
-                             defaultDir=default_dir,
-                             defaultFile=default_filename,
-                             wildcard=wildcard,
-                             style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT)
+        dialog = wx.FileDialog(
+            self,
+            "Save findings as HTML",
+            defaultDir=default_dir,
+            defaultFile=default_filename,
+            wildcard=wildcard,
+            style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT,
+        )
 
         if dialog.ShowModal() == wx.ID_OK:
             file_path = dialog.GetPath()
             try:
                 self._export_to_html(file_path)
-                wx.MessageBox(f"Findings saved to {file_path}", "Export Complete", wx.OK | wx.ICON_INFORMATION)
+                wx.MessageBox(
+                    f"Findings saved to {file_path}",
+                    "Export Complete",
+                    wx.OK | wx.ICON_INFORMATION,
+                )
             except Exception as e:
-                wx.MessageBox(f"Error saving file: {str(e)}", "Export Error", wx.OK | wx.ICON_ERROR)
+                wx.MessageBox(
+                    f"Error saving file: {str(e)}",
+                    "Export Error",
+                    wx.OK | wx.ICON_ERROR,
+                )
 
         dialog.Destroy()
 
     def _export_to_html(self, file_path: str):
         """Export the filtered findings to an HTML file with embedded styles."""
         from datetime import datetime
+
         selected_model = config_manager.get_selected_model()
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        project_name = os.path.basename(self.project_path) if self.project_path else "Unknown Project"
+        project_name = (
+            os.path.basename(self.project_path)
+            if self.project_path
+            else "Unknown Project"
+        )
 
         # Define colors for each severity level
         level_colors = {
-            "Fatal": "#8b0000",      # Dark red
-            "Major": "#ff0000",      # Red
-            "Minor": "#ffa500",      # Orange
+            "Fatal": "#8b0000",  # Dark red
+            "Major": "#ff0000",  # Red
+            "Minor": "#ffa500",  # Orange
             "Best Practice": "#0000ff",  # Blue
-            "Nice To Have": "#808080"    # Gray
+            "Nice To Have": "#808080",  # Gray
         }
 
         html_content = f"""<!DOCTYPE html>
@@ -594,16 +654,16 @@ class SchematicLLMCheckerDialog(wx.Dialog):
             html_content += '        <div class="summary">\n'
             for level, count in level_counts.items():
                 if count > 0:
-                    html_content += f'''            <div class="summary-card">
+                    html_content += f"""            <div class="summary-card">
                 <h3>{level}</h3>
                 <div class="number" style="color: {level_colors.get(level, '#007bff')}">{count}</div>
             </div>
-'''
-            html_content += '        </div>\n\n'
+"""
+            html_content += "        </div>\n\n"
 
         # Add findings table
         if self.filtered_findings:
-            html_content += '''        <table class="findings-table">
+            html_content += """        <table class="findings-table">
             <thead>
                 <tr>
                     <th>Level</th>
@@ -613,35 +673,35 @@ class SchematicLLMCheckerDialog(wx.Dialog):
                 </tr>
             </thead>
             <tbody>
-'''
+"""
 
             for finding in self.filtered_findings:
                 level_color = level_colors.get(finding.level, "#666666")
-                description_html = finding.description.replace('\n', '<br>')
-                recommendation_html = finding.recommendation.replace('\n', '<br>')
+                description_html = finding.description.replace("\n", "<br>")
+                recommendation_html = finding.recommendation.replace("\n", "<br>")
 
-                html_content += f'''                <tr>
+                html_content += f"""                <tr>
                     <td><span class="level-badge" style="background-color: {level_color}">{finding.level}</span></td>
                     <td class="description">{description_html}</td>
                     <td><span class="location">{finding.location}</span></td>
                     <td class="recommendation">{recommendation_html}</td>
                 </tr>
-'''
+"""
 
-            html_content += '''            </tbody>
+            html_content += """            </tbody>
         </table>
-'''
+"""
         else:
-            html_content += '''        <div class="no-findings">
+            html_content += """        <div class="no-findings">
             <p>No findings to display.</p>
         </div>
-'''
+"""
 
-        html_content += '''    </div>
+        html_content += """    </div>
 </body>
-</html>'''
+</html>"""
 
-        with open(file_path, 'w', encoding='utf-8') as htmlfile:
+        with open(file_path, "w", encoding="utf-8") as htmlfile:
             htmlfile.write(html_content)
 
     def on_mouse_motion(self, event):
@@ -654,7 +714,7 @@ class SchematicLLMCheckerDialog(wx.Dialog):
                 # Mouse moved to a new item
                 self.current_tooltip_item = item
                 self.tooltip_timer.Stop()
-                self.tooltip_timer.Start(100, True) # 100ms
+                self.tooltip_timer.Start(100, True)  # 100ms
 
                 # Hide existing tooltip
                 self.findings_list.SetToolTip(None)
@@ -676,7 +736,9 @@ class SchematicLLMCheckerDialog(wx.Dialog):
 
     def on_tooltip_timer(self, event):
         """Show tooltip after timer expires."""
-        if self.current_tooltip_item >= 0 and self.current_tooltip_item < len(self.filtered_findings):
+        if self.current_tooltip_item >= 0 and self.current_tooltip_item < len(
+            self.filtered_findings
+        ):
             finding = self.filtered_findings[self.current_tooltip_item]
 
             # Create comprehensive tooltip text
@@ -689,15 +751,16 @@ class SchematicLLMCheckerDialog(wx.Dialog):
 
     def on_close(self, event):
         # Clean up timer
-        if hasattr(self, 'tooltip_timer'):
+        if hasattr(self, "tooltip_timer"):
             self.tooltip_timer.Stop()
         self.EndModal(wx.ID_CLOSE)
 
     def Destroy(self):
         # Clean up timer before destroying
-        if hasattr(self, 'tooltip_timer'):
+        if hasattr(self, "tooltip_timer"):
             self.tooltip_timer.Stop()
         super().Destroy()
+
 
 def show_dialog():
     app = wx.App(False)
@@ -706,6 +769,7 @@ def show_dialog():
     dialog.ShowModal()
     dialog.Destroy()
     app.Destroy()
+
 
 if __name__ == "__main__":
     show_dialog()
