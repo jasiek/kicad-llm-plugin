@@ -27,14 +27,16 @@ Analyze both the schematic structure and the netlist connectivity to provide com
 
 --- Schematic file (.kicad_sch) below ---
 {schematic_content}
-
---- Netlist (.net) below ---
-{netlist_content}
 """
+
+# --- Netlist (.net) below ---
+# {netlist_content}
+# """
+
 
 class LLMOperations:
     def __init__(self, model_name, api_key):
-        self.client = instructor.from_provider(model_name, api_key=api_key)
+        self.client = instructor.from_provider(model_name, api_key=api_key, mode=None)
         self.model_name = model_name
         self.cache_dir = os.path.join(tempfile.gettempdir(), "kicad_llm_cache")
         os.makedirs(self.cache_dir, exist_ok=True)
@@ -48,23 +50,27 @@ class LLMOperations:
             # Google models use simple string content
             messages = [
                 {"role": "system", "content": SYSTEM_PROMPT},
-                {"role": "user", "content": USER_PROMPT_TEMPLATE + netlist}
+                {"role": "user", "content": USER_PROMPT_TEMPLATE + netlist},
             ]
         else:
             # OpenAI and other models support content list with cache control
             messages = [
                 {"role": "system", "content": SYSTEM_PROMPT},
                 {
-                    "role": "user", "content": [
+                    "role": "user",
+                    "content": [
                         {"type": "text", "text": USER_PROMPT_TEMPLATE},
-                        {"type": "text", "text": netlist, "cache_control": { "type": "ephemeral"}}
-                    ]
-                }
+                        {
+                            "type": "text",
+                            "text": netlist,
+                            "cache_control": {"type": "ephemeral"},
+                        },
+                    ],
+                },
             ]
 
         response = self.client.chat.completions.create(
-            response_model=Findings,
-            messages=messages
+            response_model=Findings, messages=messages
         )
 
         # Calculate response time
@@ -74,22 +80,26 @@ class LLMOperations:
         token_usage = TokenUsage()
         token_usage.response_time_seconds = response_time
 
-        if hasattr(response, '_raw_response') and response._raw_response:
-            usage = getattr(response._raw_response, 'usage', None)
+        if hasattr(response, "_raw_response") and response._raw_response:
+            usage = getattr(response._raw_response, "usage", None)
             if usage:
-                token_usage.total_tokens = getattr(usage, 'total_tokens', 0)
-                token_usage.input_tokens = getattr(usage, 'prompt_tokens', 0)
-                token_usage.output_tokens = getattr(usage, 'completion_tokens', 0)
+                token_usage.total_tokens = getattr(usage, "total_tokens", 0)
+                token_usage.input_tokens = getattr(usage, "prompt_tokens", 0)
+                token_usage.output_tokens = getattr(usage, "completion_tokens", 0)
 
                 # Check for cache-specific token counts (Anthropic models)
-                if hasattr(usage, 'cache_creation_input_tokens'):
-                    token_usage.cache_creation_input_tokens = usage.cache_creation_input_tokens
-                if hasattr(usage, 'cache_read_input_tokens'):
+                if hasattr(usage, "cache_creation_input_tokens"):
+                    token_usage.cache_creation_input_tokens = (
+                        usage.cache_creation_input_tokens
+                    )
+                if hasattr(usage, "cache_read_input_tokens"):
                     token_usage.cache_read_input_tokens = usage.cache_read_input_tokens
 
         return AnalysisResult(findings=response.findings, token_usage=token_usage)
 
-    def analyze_schematic_and_netlist(self, netlist: str, schematic: str = None) -> AnalysisResult:
+    def analyze_schematic_and_netlist(
+        self, netlist: str, schematic: str = None
+    ) -> AnalysisResult:
         """Analyze both schematic file and netlist content together."""
         # Start timing the response
         start_time = time.time()
@@ -100,8 +110,7 @@ class LLMOperations:
 
         # Format the prompt with both schematic and netlist content
         formatted_prompt = USER_PROMPT_TEMPLATE.format(
-            schematic_content=schematic,
-            netlist_content=netlist
+            schematic_content=schematic, netlist_content=netlist
         )
 
         # Create messages based on provider
@@ -109,22 +118,26 @@ class LLMOperations:
             # Google models use simple string content
             messages = [
                 {"role": "system", "content": SYSTEM_PROMPT},
-                {"role": "user", "content": formatted_prompt}
+                {"role": "user", "content": formatted_prompt},
             ]
         else:
             # OpenAI and other models support content list with cache control
             messages = [
                 {"role": "system", "content": SYSTEM_PROMPT},
                 {
-                    "role": "user", "content": [
-                        {"type": "text", "text": formatted_prompt, "cache_control": { "type": "ephemeral"}}
-                    ]
-                }
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": formatted_prompt,
+                            "cache_control": {"type": "ephemeral"},
+                        }
+                    ],
+                },
             ]
 
         response = self.client.chat.completions.create(
-            response_model=Findings,
-            messages=messages
+            response_model=Findings, messages=messages
         )
 
         # Calculate response time
@@ -134,17 +147,19 @@ class LLMOperations:
         token_usage = TokenUsage()
         token_usage.response_time_seconds = response_time
 
-        if hasattr(response, '_raw_response') and response._raw_response:
-            usage = getattr(response._raw_response, 'usage', None)
+        if hasattr(response, "_raw_response") and response._raw_response:
+            usage = getattr(response._raw_response, "usage", None)
             if usage:
-                token_usage.total_tokens = getattr(usage, 'total_tokens', 0)
-                token_usage.input_tokens = getattr(usage, 'prompt_tokens', 0)
-                token_usage.output_tokens = getattr(usage, 'completion_tokens', 0)
+                token_usage.total_tokens = getattr(usage, "total_tokens", 0)
+                token_usage.input_tokens = getattr(usage, "prompt_tokens", 0)
+                token_usage.output_tokens = getattr(usage, "completion_tokens", 0)
 
                 # Check for cache-specific token counts (Anthropic models)
-                if hasattr(usage, 'cache_creation_input_tokens'):
-                    token_usage.cache_creation_input_tokens = usage.cache_creation_input_tokens
-                if hasattr(usage, 'cache_read_input_tokens'):
+                if hasattr(usage, "cache_creation_input_tokens"):
+                    token_usage.cache_creation_input_tokens = (
+                        usage.cache_creation_input_tokens
+                    )
+                if hasattr(usage, "cache_read_input_tokens"):
                     token_usage.cache_read_input_tokens = usage.cache_read_input_tokens
 
         return AnalysisResult(findings=response.findings, token_usage=token_usage)

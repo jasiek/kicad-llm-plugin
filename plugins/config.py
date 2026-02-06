@@ -14,7 +14,7 @@ class ConfigManager:
         """Load configuration from disk."""
         if self.config_file.exists():
             try:
-                with open(self.config_file, 'r') as f:
+                with open(self.config_file, "r") as f:
                     return json.load(f)
             except (json.JSONDecodeError, IOError):
                 pass
@@ -23,16 +23,17 @@ class ConfigManager:
         return {
             "selected_model": "openai/gpt-4o-mini",
             "provider_api_keys": {},
-            "last_updated": None
+            "last_updated": None,
         }
 
     def _save_config(self) -> None:
         """Save configuration to disk."""
         import datetime
+
         self._config["last_updated"] = datetime.datetime.now().isoformat()
 
         try:
-            with open(self.config_file, 'w') as f:
+            with open(self.config_file, "w") as f:
                 json.dump(self._config, f, indent=2)
         except IOError as e:
             print(f"Failed to save configuration: {e}")
@@ -71,7 +72,10 @@ class ConfigManager:
 
     def remove_api_key_for_provider(self, provider: str) -> None:
         """Remove API key for a specific provider."""
-        if "provider_api_keys" in self._config and provider in self._config["provider_api_keys"]:
+        if (
+            "provider_api_keys" in self._config
+            and provider in self._config["provider_api_keys"]
+        ):
             del self._config["provider_api_keys"][provider]
             self._save_config()
 

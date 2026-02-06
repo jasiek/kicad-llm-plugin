@@ -7,13 +7,19 @@ from config import config_manager
 from typing import List, Optional
 
 AVAILABLE_MODELS = [
-    "openai/gpt-5.1",
     "openai/gpt-5.2",
     "openai/gpt-5-mini",
     "openai/gpt-5-nano",
+    "openai/gpt-oss-120b",
+    "openai/gpt-oss-20b",
+    "google/gemini-3-flash-preview",
+    "google/gemini-3-pro-preview",
     "google/gemini-2.5-flash-lite",
     "google/gemini-2.5-flash",
-    "google/gemini-3-pro-preview",
+    "groq/llama-3.3-70b-versatile",
+    "groq/meta-llama/llama-4-maverick-17b-128e-instruct",
+    "groq/openai/gpt-oss-120b",
+    "groq/openai/gpt-oss-20b",
 ]
 
 
