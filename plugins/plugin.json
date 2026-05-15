@@ -1,7 +1,7 @@
 {
-  "$schema": "https://go.kicad.org/api/schemas/v1",
+  "$schema": "https://go.kicad.org/api/schemas/v2",
   "name": "Schematic LLM Checker",
-  "identifier": "com.github.jasiek.kicad-llm-plugin",
+  "identifier": "com.github.northstarcomp.kicad-llm-plugin",
   "description": "AI-powered schematic verification and analysis",
   "runtime": {
     "type": "python",
