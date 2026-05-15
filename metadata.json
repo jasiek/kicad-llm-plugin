@@ -1,27 +1,30 @@
 {
-    "$schema": "https://go.kicad.org/pcm/schemas/v1",
+    "$schema": "https://go.kicad.org/pcm/schemas/v2",
     "name": "kicad-llm-plugin",
-    "description": "A plugin for KiCad that integrates large language model (LLM) capabilities to assist with PCB design tasks.",
-    "identifier": "com.github.jasiek.kicad-llm-plugin",
+    "description": "LLM-powered assistance for KiCad PCB design",
+    "identifier": "com.github.northstarcomp.kicad-llm-plugin",
     "type": "plugin",
-    "version": "1.0.0",
+    "version": "1.0.1",
+    "kicad_version": "10.0",
+    "url": "https://github.com/northstarcomp/kicad-llm-plugin",
     "author": {
-        "name": "Your Name",
+        "name": "northstarcomp",
         "contact": {
-            "email": "your.email@example.com"
+            "email": "jasiek@example.com"
         }
     },
     "license": "MIT",
     "resources": {
-        "homepage": "https://github.com/jasiek/kicad-llm-plugin",
-        "repository": "https://github.com/jasiek/kicad-llm-plugin"
+        "homepage": "https://github.com/northstarcomp/kicad-llm-plugin/",
+        "repository": "https://github.com/northstarcomp/kicad-llm-plugin/"
     },
-    "description_full": "This plugin leverages large language models to provide intelligent assistance within KiCad, such as generating footprints, symbols, or automating design tasks.",
+    "description_full": "Integrates large language models directly into KiCad for intelligent assistance with schematic/PCB tasks.",
     "versions": [
         {
-            "version": "0.0.1",
-            "status": "development",
-            "kicad_version": "9.0.0"
+            "version": "1.0.1",
+            "status": "stable",
+            "kicad_version": "10.0",
+            "download_url": "https://github.com/northstarcomp/kicad-llm-plugin/releases/download/v1.0.1/kicad-llm-plugin.zip"
         }
     ]
 }
