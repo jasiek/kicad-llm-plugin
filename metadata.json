@@ -4,27 +4,25 @@
     "description": "LLM-powered assistance for KiCad PCB design",
     "identifier": "com.github.northstarcomp.kicad-llm-plugin",
     "type": "plugin",
-    "version": "1.0.1",
+    "version": "1.0.2",
     "kicad_version": "10.0",
     "url": "https://github.com/northstarcomp/kicad-llm-plugin",
     "author": {
         "name": "northstarcomp",
-        "contact": {
-            "email": "your.email@example.com"
-        }
+        "contact": {}
     },
     "license": "MIT",
     "resources": {
         "homepage": "https://github.com/northstarcomp/kicad-llm-plugin",
         "repository": "https://github.com/northstarcomp/kicad-llm-plugin"
     },
-    "description_full": "Integrates large language models directly into KiCad for intelligent assistance with schematic/PCB tasks. Forked and maintained for KiCAD 10 compatibility.",
+    "description_full": "Integrates large language models directly into KiCad for intelligent assistance with schematic/PCB tasks. Updated for KiCAD 10 compatibility.",
     "versions": [
         {
-            "version": "1.0.1",
+            "version": "1.0.2",
             "status": "stable",
             "kicad_version": "10.0",
-            "download_url": "https://github.com/northstarcomp/kicad-llm-plugin/releases/download/v1.0.1/kicad-llm-plugin.zip"
+            "download_url": "https://github.com/northstarcomp/kicad-llm-plugin/releases/download/v1.0.2/kicad-llm-plugin.zip"
         }
     ]
 }
