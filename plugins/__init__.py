@@ -256,7 +256,19 @@ class _LLMDialog(wx.Dialog):
         req  = urllib.request.Request(url, json.dumps(body).encode(), hdrs, method="POST")
         with urllib.request.urlopen(req, timeout=120) as resp:
             data = json.loads(resp.read())
-
+           
+        # Extract token usage when available
+            usage_text = ""
+            if "usage" in data:
+                u = data["usage"]
+                usage_text = (f"\n\n--- Token Usage ---\n"
+                      f"Prompt: {u.get('prompt_tokens', 0)} | "
+                      f"Completion: {u.get('completion_tokens', 0)} | "
+                      f"Total: {u.get('total_tokens', 0)}")
+               
         if is_anthropic:
             return data["content"][0]["text"]
         return data["choices"][0]["message"]["content"]
+
+         return result + usage_text
+
