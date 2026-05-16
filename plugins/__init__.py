@@ -233,22 +233,24 @@ class _LLMDialog(wx.Dialog):
         import json, urllib.request
         prompt = self._prompt()
         is_anthropic = model_id.startswith("claude")
+        is_xai = base_url and "x.ai" in base_url
 
         if is_anthropic:
             url  = "https://api.anthropic.com/v1/messages"
             hdrs = {"Content-Type": "application/json",
                     "x-api-key": api_key,
                     "anthropic-version": "2023-06-01"}
-            body = {"model": model_id, "max_tokens": 2048,
+            body = {"model": model_id, "max_tokens": 4096,
                     "messages": [{"role": "user", "content": prompt}]}
         else:
+            # OpenAI-compatible (OpenAI, xAI, Ollama)
             url  = (base_url or "https://api.openai.com/v1") + "/chat/completions"
             hdrs = {"Content-Type": "application/json",
                     "Authorization": f"Bearer {api_key}"}
-            body = {"model": model_id, "max_tokens": 2048,
+            body = {"model": model_id, "max_tokens": 4096,
                     "messages": [
-                        {"role": "system", "content": "You are an electronics design expert."},
-                        {"role": "user",   "content": prompt}
+                        {"role": "system", "content": "You are an electronics design expert reviewing a KiCad schematic/PCB."},
+                        {"role": "user",   "conten# OpenAI-compatible (OpenAI, xAI, Ollama)t": prompt}
                     ]}
 
         req  = urllib.request.Request(url, json.dumps(body).encode(), hdrs, method="POST")
