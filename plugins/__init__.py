@@ -108,15 +108,18 @@ def _collect_board_info(board):
 
 class _LLMDialog(wx.Dialog):
 
-    _MODELS = [
-        # label,                              model_id,                    base_url
-        ("Claude Sonnet 4 (Anthropic)",       "claude-sonnet-4-20250514",  None),
-        ("Claude Opus 4 (Anthropic)",         "claude-opus-4-20250514",    None),
-        ("GPT-4o (OpenAI)",                   "gpt-4o",                    None),
-        ("GPT-4o-mini (OpenAI)",              "gpt-4o-mini",               None),
-        ("Ollama llama3 (local)",             "llama3",                    "http://localhost:11434/v1"),
-        ("Ollama mistral (local)",            "mistral",                   "http://localhost:11434/v1"),
-    ]
+   _MODELS = [
+    # label,                              model_id,                    base_url
+    ("Grok 3 (xAI)",                      "grok-3-latest",             "https://api.x.ai/v1"),
+    ("Grok 3 Mini (xAI)",                 "grok-3-mini-latest",        "https://api.x.ai/v1"),
+    ("Claude Sonnet 4 (Anthropic)",       "claude-sonnet-4-20250514",  None),
+    ("Claude Opus 4 (Anthropic)",         "claude-opus-4-20250514",    None),
+    ("GPT-4o (OpenAI)",                   "gpt-4o",                    None),
+    ("GPT-4o-mini (OpenAI)",              "gpt-4o-mini",               None),
+    ("Ollama llama3 (local)",             "llama3",                    "http://localhost:11434/v1"),
+    ("Ollama mistral (local)",            "mistral",                   "http://localhost:11434/v1"),
+    ("Ollama gemma2 (local)",             "gemma2",                    "http://localhost:11434/v1"),
+]
 
     def __init__(self, parent, board_info):
         super().__init__(parent, title="LLM Schematic Analyser",
@@ -227,31 +230,56 @@ class _LLMDialog(wx.Dialog):
         return "\n".join(lines)
 
     def _call_llm(self, model_id, api_key, base_url):
-        import json, urllib.request
-        prompt = self._prompt()
-        is_anthropic = model_id.startswith("claude")
+    import json, urllib.request
 
-        if is_anthropic:
-            url  = "https://api.anthropic.com/v1/messages"
-            hdrs = {"Content-Type": "application/json",
-                    "x-api-key": api_key,
-                    "anthropic-version": "2023-06-01"}
-            body = {"model": model_id, "max_tokens": 2048,
-                    "messages": [{"role": "user", "content": prompt}]}
-        else:
-            url  = (base_url or "https://api.openai.com/v1") + "/chat/completions"
-            hdrs = {"Content-Type": "application/json",
-                    "Authorization": f"Bearer {api_key}"}
-            body = {"model": model_id, "max_tokens": 2048,
-                    "messages": [
-                        {"role": "system", "content": "You are an electronics design expert."},
-                        {"role": "user",   "content": prompt}
-                    ]}
+    prompt = self._prompt()
+    is_anthropic = model_id.startswith("claude")
+    is_xai = base_url and "x.ai" in base_url
 
-        req  = urllib.request.Request(url, json.dumps(body).encode(), hdrs, method="POST")
-        with urllib.request.urlopen(req, timeout=120) as resp:
-            data = json.loads(resp.read())
+    if is_anthropic:
+        url = "https://api.anthropic.com/v1/messages"
+        headers = {
+            "Content-Type": "application/json",
+            "x-api-key": api_key,
+            "anthropic-version": "2023-06-01"
+        }
+        body = {
+            "model": model_id,
+            "max_tokens": 4096,
+            "messages": [{"role": "user", "content": prompt}]
+        }
+    else:
+        # OpenAI-compatible (OpenAI, xAI, Ollama)
+        url = (base_url or "https://api.openai.com/v1") + "/chat/completions"
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {api_key}"
+        }
+        body = {
+            "model": model_id,
+            "max_tokens": 4096,
+            "messages": [
+                {"role": "system", "content": "You are an electronics design expert reviewing a KiCad schematic/PCB."},
+                {"role": "user", "content": prompt}
+            ]
+        }
 
-        if is_anthropic:
-            return data["content"][0]["text"]
-        return data["choices"][0]["message"]["content"]
+    req = urllib.request.Request(url, json.dumps(body).encode(), headers, method="POST")
+    with urllib.request.urlopen(req, timeout=180) as resp:
+        data = json.loads(resp.read())
+
+    # Extract token usage when available
+    usage_text = ""
+    if "usage" in data:
+        u = data["usage"]
+        usage_text = (f"\n\n--- Token Usage ---\n"
+                      f"Prompt: {u.get('prompt_tokens', 0)} | "
+                      f"Completion: {u.get('completion_tokens', 0)} | "
+                      f"Total: {u.get('total_tokens', 0)}")
+
+    if is_anthropic:
+        result = data["content"][0]["text"]
+    else:
+        result = data["choices"][0]["message"]["content"]
+
+    return result + usage_text
