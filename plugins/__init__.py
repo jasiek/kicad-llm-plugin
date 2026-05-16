@@ -110,13 +110,16 @@ class _LLMDialog(wx.Dialog):
 
     _MODELS = [
         # label,                              model_id,                    base_url
-        ("Claude Sonnet 4 (Anthropic)",       "claude-sonnet-4-20250514",  None),
-        ("Claude Opus 4 (Anthropic)",         "claude-opus-4-20250514",    None),
-        ("GPT-4o (OpenAI)",                   "gpt-4o",                    None),
-        ("GPT-4o-mini (OpenAI)",              "gpt-4o-mini",               None),
-        ("Ollama llama3 (local)",             "llama3",                    "http://localhost:11434/v1"),
-        ("Ollama mistral (local)",            "mistral",                   "http://localhost:11434/v1"),
-    ]
+        ("Grok 3 (xAI)",                      "grok-3-latest",            "https://api.x.ai/v1"),
+        ("Grok 3 Mini (xAI)",                 "grok-3-mini-latest",       "https://api.x.ai/v1"),
+        ("Claude Sonnet 4 (Anthropic)",       "claude-sonnet-4-20250514", None),
+        ("Claude Opus 4 (Anthropic)",         "claude-opus-4-20250514",   None),
+        ("GPT-4o (OpenAI)",                   "gpt-4o",                   None),
+        ("GPT-4o-mini (OpenAI)",              "gpt-4o-mini",              None),
+        ("Ollama llama3 (local)",             "llama3",                   "http://localhost:11434/v1"),
+        ("Ollama mistral (local)",            "mistral",                  "http://localhost:11434/v1"),
+        ("Ollama gemma2 (local)",             "gemma2",                   "http://localhost:11434/v1"),
+   ]
 
     def __init__(self, parent, board_info):
         super().__init__(parent, title="LLM Schematic Analyser",
