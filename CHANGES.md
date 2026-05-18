@@ -1,3 +1,20 @@
+# KiCad LLM Plugin — Change Log
+
+## v1.5.1 (May 2026)
+
+### Stability Fixes
+- **FIX-16**: `ConfigManager` now uses `mkdir(parents=True, exist_ok=True)`
+- **FIX-17**: `import pcbnew` and `import wx` moved inside try/except block
+- **FIX-18**: Safe `_make_config()` factory to prevent import-time crashes
+
+### New Features (from v1.5.0)
+- Persistent API keys per provider (Anthropic / OpenAI / xAI)
+- "Clear Keys" button
+- Clean Token Usage display in StaticBox
+- Copy buttons for AI Response and Token Usage
+
+
+
 # KiCad LLM Plugin — Change Annotations
 ## Original (jasiek) → v1.5.0 (northstarcomp)
 
