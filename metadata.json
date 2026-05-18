@@ -1,27 +1,25 @@
 {
     "$schema": "https://go.kicad.org/pcm/schemas/v1",
-    "name": "kicad-llm-plugin",
-    "description": "A plugin for KiCad that integrates large language model (LLM) capabilities to assist with PCB design tasks.",
-    "identifier": "com.github.jasiek.kicad-llm-plugin",
+    "name": "LLM Schematic Analyser",
+    "description": "Inspect your schematic with an LLM and get design improvement suggestions.",
+    "description_full": "This plugin lets you inspect your KiCad schematic or PCB with a large language model. Supports Claude, Grok (xAI), GPT-4o and local Ollama.\n\nv1.5.1: Persistent API keys, copy buttons, improved stability.",
+    "identifier": "com.github.northstarcomp.kicad-llm-plugin",
     "type": "plugin",
-    "version": "1.0.0",
     "author": {
-        "name": "Your Name",
+        "name": "northstarcomp",
         "contact": {
-            "email": "your.email@example.com"
+            "github": "https://github.com/northstarcomp/kicad-llm-plugin"
         }
     },
     "license": "MIT",
     "resources": {
-        "homepage": "https://github.com/jasiek/kicad-llm-plugin",
-        "repository": "https://github.com/jasiek/kicad-llm-plugin"
+        "homepage": "https://github.com/northstarcomp/kicad-llm-plugin"
     },
-    "description_full": "This plugin leverages large language models to provide intelligent assistance within KiCad, such as generating footprints, symbols, or automating design tasks.",
     "versions": [
         {
-            "version": "0.0.1",
-            "status": "development",
-            "kicad_version": "9.0.0"
+            "version": "1.5.1",
+            "status": "stable",
+            "kicad_version": "8.0"
         }
     ]
 }

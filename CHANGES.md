@@ -1,3 +1,28 @@
+# KiCad LLM Plugin — Change Log
+
+## v1.5.1 (May 2026)
+
+### Stability Fixes
+- **FIX-16**: `ConfigManager` now uses `mkdir(parents=True, exist_ok=True)`
+- **FIX-17**: `import pcbnew` and `import wx` moved inside try/except block
+- **FIX-18**: Safe `_make_config()` factory to prevent import-time crashes
+
+### New Features (from v1.5.0)
+- Persistent API keys per provider (Anthropic / OpenAI / xAI)
+- "Clear Keys" button
+- Clean Token Usage display in StaticBox
+- Copy buttons for AI Response and Token Usage
+
+
+
+# KiCad LLM Plugin — Change Annotations
+## Original (jasiek) → v1.5.0 (northstarcomp)
+
+All fixes are marked with `[FIX-N]` tags, summarised at the bottom.
+
+---
+
+```python
 """
 KiCad LLM Plugin — __init__.py
 Version: 1.5.1
@@ -372,3 +397,37 @@ class _LLMDialog(wx.Dialog):
             usage = data.get("usage", {})
 
         return result, usage
+```
+
+---
+
+## Fix Summary
+
+| # | What | Why it broke |
+|---|------|-------------|
+| FIX-1 | Version set to `1.5.0` in docstring and `metadata.json` | PCM showed stale version |
+| FIX-2 | `_HERE` captured at module level with `os.path.abspath(__file__)` | KiCad 10 changes working dir; relative paths for icons silently fail |
+| FIX-3 | Entire registration wrapped in `try/except + traceback.print_exc()` | Silent load failures gave no diagnostic output |
+| FIX-4 | `self.show_toolbar_button = True` set explicitly | KiCad 10 requires explicit True; omitting it hides the toolbar button |
+| FIX-5 | Icon paths built from `_HERE` (absolute) | KiCad 10 requires absolute icon paths; relative paths silently fail |
+| FIX-6 | `dark_icon_file_name` attribute added | Icon missing or wrong on dark themes in KiCad 9/10 |
+| FIX-7 | All KiCad API returns wrapped in `str()` | KiCad returns `wxString`; `sorted()` and `<` comparisons crash on wxString |
+| FIX-8 | `GetFootprints()` replaces `GetModules()` | `GetModules()` removed in KiCad 7; raises `AttributeError` on load |
+| FIX-9 | Model list extended to 4-tuple with explicit `api_type` field | Clean routing to correct API format without fragile string matching |
+| FIX-10 | `int(self._model.GetSelection())` | KiCad's bundled wx returns `wxString` from `GetSelection()`; crashes as list index |
+| FIX-11 | xAI uses `/v1/responses` with `input` string and `max_output_tokens` | xAI Responses API is different from OpenAI `/v1/chat/completions`; wrong format → HTTP 400 |
+| FIX-12 | `HTTPError` caught and body decoded for readable error messages | Raw `HTTPError` only shows status code, not the API's actual error message |
+| FIX-13 | Anthropic token fields: `input_tokens` / `output_tokens` | Anthropic uses different field names from OpenAI |
+| FIX-14 | xAI response parsed from `output[0].content[0].text` | xAI Responses API nests the text differently from OpenAI `choices[0].message.content` |
+| FIX-15 | Single `return result + usage_text` at end of `_call_llm` | Original had `return result + usage_text` as unreachable dead code after early returns |
+
+## metadata.json fixes
+
+| Issue | Fix |
+|-------|-----|
+| `"$schema"` pointing to v2 | Changed to v1 — v2 caused validator failures |
+| Extra top-level fields (`version`, `kicad_version`, `url`) | Removed — these belong only inside `versions[]` |
+| `"web"` contact key | Changed to `"github"` — only specific keys are valid in v1 schema |
+| `download_sha256: ""`, `download_size: 0` | Removed entirely — empty/zero optional fields fail schema validation |
+| `kicad_version: "10.0"` | Changed to `"8.0"` — validator is proven against this value |
+| Zip built from parent folder | Rebuilt from inside plugin folder so `metadata.json` is at archive root |
